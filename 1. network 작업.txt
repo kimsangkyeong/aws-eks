@@ -1,0 +1,12 @@
+# 1. EKS Pod Network 구성 및 LB 배포방법 및 Subnet 설계
+# 1-1. OverLay Network
+#      - VPC와 중첩되지 않는 CIDR 설계
+#      1-1-1. LB 를 수동 배포하기
+#             - Subnet에 tag 식별자 추가 없음.
+#      1-1-2. LB 를 EKS에서 자동 배포하기
+#             - Subnet에 인터넷/내부 통신을 고려하여 설정 사전 필수 (LB 배포시 subnet 조회함. 없으면 Pending/실패)
+#               1-1-2-1. Private Subnet Tag 설정 (출처: <https://docs.aws.amazon.com/ko_kr/eks/latest/userguide/getting-started-console.html>)
+#                        - Tag Key / value = kubernetes.io/role/internal-elb / 1
+#               1-1-2-2. Public Subnet Tag 설정 (출처: <https://docs.aws.amazon.com/ko_kr/eks/latest/userguide/getting-started-console.html>)
+#                        - Tag Key / value = kubernetes.io/role/elb / 1
+#
