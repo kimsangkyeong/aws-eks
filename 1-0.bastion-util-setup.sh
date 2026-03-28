@@ -45,6 +45,9 @@ EKSCTL_PARAM_ARCH=$PARAM_ARCH
 AWSCLIV2_PARAM_OS=$PARAM_OS
 AWSCLIV2_PARAM_ARCH=$PARAM_ARCH
 
+# k9s parameters
+K9S_PARAM_ARCH=$PARAM_ARCH
+
 # =========<<<< Important Global Variable Registration Area Marking Comment (end) >>>>=================
 
 # =========<<<< Function Registration Area Marking Comment (start) >>>>================================
@@ -124,6 +127,13 @@ printf "\n-------------------------\n"
 echo "# 2. awscliv2 도구 설치 및 환경설정"
 echo "1-3.install-awscliv2.sh $AWSCLIV2_PARAM_OS $AWSCLIV2_PARAM_ARCH"
 1-3.install-awscliv2.sh $AWSCLIV2_PARAM_OS $AWSCLIV2_PARAM_ARCH
+jobProcess "checking"   # monitoring - checking
+
+# b. k9s 도구 설치 및 환경설정
+echo -e "\n-------------------------\n"
+echo "# b. k9s 도구 설치 및 환경설정"
+echo "1-b.install-k9s.sh $K9S_PARAM_ARCH"
+1-b.install-k9s.sh $K9S_PARAM_ARCH
 
 jobProcess "end"   # monitoring - end
 # =========<<<< Main Logic Coding Area Marking Comment (end) >>>>======================================
