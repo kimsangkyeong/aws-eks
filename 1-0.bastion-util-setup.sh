@@ -28,6 +28,11 @@ ELAPSED_TIME=0  # job 수행 시간
 PARAM_OS="linux"
 PARAM_ARCH="amd64"
 
+# jq parameters
+JQ_PARAM_OS=$PARAM_OS
+JQ_PARAM_VER="1.8.1"
+JQ_PARAM_ARCH=$PARAM_ARCH
+
 # kubectl parameters
 KUBECTL_PARAM_OS=$PARAM_OS
 KUBECTL_PARAM_VER="1.35"
@@ -87,6 +92,13 @@ jobProcess()
 
 # =========<<<< Main Logic Coding Area Marking Comment (start) >>>>====================================
 jobProcess "start"
+
+# a. jq 도구 설치 및 환경설정
+echo -e "\n-------------------------\n"
+echo "# a. jq 도구 설치 및 환경설정"
+echo "1-a.install-jq.sh $JQ_PARAM_OS $JQ_PARAM_VER $JQ_PARAM_ARCH"
+1-a.install-jq.sh $JQ_PARAM_OS $JQ_PARAM_VER $JQ_PARAM_ARCH
+jobProcess "checking"
 
 # 1. kubectl 도구 설치 및 환경설정
 echo -e "\n-------------------------\n"
