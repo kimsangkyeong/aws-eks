@@ -40,6 +40,11 @@ KUBECTL_PARAM_ARCH=$PARAM_ARCH
 
 # eksctl parameters
 EKSCTL_PARAM_ARCH=$PARAM_ARCH
+
+# awscliv2 parameters
+AWSCLIV2_PARAM_OS=$PARAM_OS
+AWSCLIV2_PARAM_ARCH=$PARAM_ARCH
+
 # =========<<<< Important Global Variable Registration Area Marking Comment (end) >>>>=================
 
 # =========<<<< Function Registration Area Marking Comment (start) >>>>================================
@@ -91,27 +96,34 @@ jobProcess()
 # =========<<<< Function Registration Area Marking Comment (end) >>>>==================================
 
 # =========<<<< Main Logic Coding Area Marking Comment (start) >>>>====================================
-jobProcess "start"
+jobProcess "start"  # monitoring - start
 
 # a. jq 도구 설치 및 환경설정
 echo -e "\n-------------------------\n"
 echo "# a. jq 도구 설치 및 환경설정"
 echo "1-a.install-jq.sh $JQ_PARAM_OS $JQ_PARAM_VER $JQ_PARAM_ARCH"
 1-a.install-jq.sh $JQ_PARAM_OS $JQ_PARAM_VER $JQ_PARAM_ARCH
-jobProcess "checking"
+jobProcess "checking"   # monitoring - checking
 
 # 1. kubectl 도구 설치 및 환경설정
 echo -e "\n-------------------------\n"
 echo "# 1. kubectl 도구 설치 및 환경설정"
 echo "1-1.install-kubectl.sh $KUBECTL_PARAM_OS $KUBECTL_PARAM_VER $KUBECTL_PARAM_ARCH"
 1-1.install-kubectl.sh $KUBECTL_PARAM_OS $KUBECTL_PARAM_VER $KUBECTL_PARAM_ARCH
-jobProcess "checking"
+jobProcess "checking"   # monitoring - checking
 
 # 2. eksctl 도구 설치 및 환경설정
 printf "\n-------------------------\n"
 echo "# 2. eksctl 도구 설치 및 환경설정"
 echo "1-2.install-eksctl.sh $EKSCTL_PARAM_ARCH"
 1-2.install-eksctl.sh $EKSCTL_PARAM_ARCH
+jobProcess "checking"   # monitoring - checking
 
-jobProcess "end"
+# 3. awscliv2 도구 설치 및 환경설정
+printf "\n-------------------------\n"
+echo "# 2. awscliv2 도구 설치 및 환경설정"
+echo "1-3.install-awscliv2.sh $AWSCLIV2_PARAM_OS $AWSCLIV2_PARAM_ARCH"
+1-3.install-awscliv2.sh $AWSCLIV2_PARAM_OS $AWSCLIV2_PARAM_ARCH
+
+jobProcess "end"   # monitoring - end
 # =========<<<< Main Logic Coding Area Marking Comment (end) >>>>======================================
