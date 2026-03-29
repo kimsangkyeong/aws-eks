@@ -162,7 +162,7 @@ vpc:
     privateAccess: true
     publicAccess: false
   publicAccessCIDRs: [ 218.237.76.216/32 ]
-  additionalSecurityGroupIds: ["sg-0871b732e2357246e"]
+  controlPlaneSecurityGroupIDs: ["sg-0871b732e2357246e"]
   
 iam:
   serviceRoleARN: "arn:aws:iam::xxxxxxxxxxxx:role/tb07297-eks-cluster-role"
