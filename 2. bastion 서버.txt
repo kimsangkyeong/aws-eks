@@ -199,6 +199,14 @@ managedNodeGroups:
       attachIDs: [ sg-0871b732e2357246e ]
     volumeType: gp3
 
+# Managed Addons 설정
+addons:
+  - name: vpc-cni        # 기본 필수 애드온
+  - name: kube-proxy     # 기본 필수 애드온
+  - name: coredns        # 기본 필수 애드온
+  - name: metrics-server # [추가] Metrics Server 활성화
+    version: latest      # 특정 버전을 지정하거나 최신 버전 사용
+
 ===================
      7-1-6. eksctl configure 파일 점검
             - eksctl create cluster -f cluster.yaml --dry-run
