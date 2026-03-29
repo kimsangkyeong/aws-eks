@@ -162,7 +162,8 @@ vpc:
     privateAccess: true
     publicAccess: false
   publicAccessCIDRs: [ 218.237.76.216/32 ]
-
+  additionalSecurityGroupIds: ["sg-0871b732e2357246e"]
+  
 iam:
   serviceRoleARN: "arn:aws:iam::xxxxxxxxxxxx:role/tb07297-eks-cluster-role"
   withOIDC: true
@@ -212,7 +213,7 @@ addons:
             - eksctl create cluster -f cluster.yaml --dry-run
      7-1-7. eksctl로 eks 생성하기
             - eksctl create cluster -f cluster.yaml
-     7-1-8. eksctl로 cluster 점검하기
+     7-1-8. eksctl로 cluster 점검하기           => aws configure  로 region 먼저 설정할 필요 있음.
             - eksctl get cluster
      7-1-9. kubectl 연결하기
             - aws eks update-kubeconfig --name <Cluster Name> --region <Region>
