@@ -142,8 +142,8 @@ kind: ClusterConfig
 metadata:
   name: eks-tb07297
   region: ap-northeast-2
-  version: "1.34"
-  tags:  {tool: eksctl}
+  version: "1.35"
+  tags: {tool: eksctl}
 
 kubernetesNetworkConfig:
   ipFamily: IPv4
@@ -163,10 +163,14 @@ vpc:
     publicAccess: false
   publicAccessCIDRs: [ 218.237.76.216/32 ]
 
+iam:
+  serviceRoleARN: "arn:aws:iam::xxxxxxxxxxxx:role/tb07297-eks-cluster-role"
+  withOIDC: true
+
 managedNodeGroups:
-  - name: ng-1-workers
-    labels: { role: workers }
-    instanceType: m5.xlarge
+  - name: management
+    labels: { role: management }
+    instanceType: t3.medium
     desiredCapacity: 1
     minSize: 1
     maxSize: 3
@@ -175,10 +179,26 @@ managedNodeGroups:
     privateNetworking: true
     tags: {finops-start: skip, finops-stop: skip}
     iam:
-      instanceRoleARN: arn:aws:iam::XXXXXXXXXXXX:role/tb07297-bastion-role
+      instanceRoleARN: "arn:aws:iam::xxxxxxxxxxxx:role/tb07297-eks-nodegroup-role"
     securityGroups:
       attachIDs: [ sg-0871b732e2357246e ]
     volumeType: gp3
+  - name: worker
+    labels: { role: workers }
+    instanceType: t3.medium
+    desiredCapacity: 1
+    minSize: 1
+    maxSize: 3
+    subnets: [ subnet-03cea3f8ba88173ea, subnet-0a99c143eca28ec73 ]
+    volumeSize: 80
+    privateNetworking: true
+    tags: {finops-start: skip, finops-stop: skip}
+    iam:
+      instanceRoleARN: "arn:aws:iam::xxxxxxxxxxxx:role/tb07297-eks-nodegroup-role"
+    securityGroups:
+      attachIDs: [ sg-0871b732e2357246e ]
+    volumeType: gp3
+
 ===================
      7-1-6. eksctl configure 파일 점검
             - eksctl create cluster -f cluster.yaml --dry-run

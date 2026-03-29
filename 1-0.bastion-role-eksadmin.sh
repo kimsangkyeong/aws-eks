@@ -194,7 +194,13 @@ EOF
                 "ec2:AuthorizeSecurityGroupEgress",
                 "ec2:CreateTags",
                 "ec2:RunInstances",
-                "ec2:TerminateInstances"
+                "ec2:TerminateInstances",
+                "ec2:CreateLaunchTemplate",
+                "ec2:DeleteLaunchTemplate",
+                "ec2:CreateLaunchTemplateVersion",
+                "ec2:DeleteLaunchTemplateVersions",
+                "ec2:GetLaunchTemplateData",
+                "ec2:ModifyLaunchTemplate"
             ],
             "Resource": "*"
         },
