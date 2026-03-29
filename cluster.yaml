@@ -5,11 +5,11 @@ metadata:
   name: eks-tb07297
   region: ap-northeast-2
   version: "1.35"
-  tags: {tool: eksctl}
+  tags: {tool: eksctl}    # EKS Cluster Tag 설정하기
 
 kubernetesNetworkConfig:
   ipFamily: IPv4
-  serviceIPv4CIDR: "10.128.0.0/16"
+  serviceIPv4CIDR: "10.128.0.0/16"    # kubernetes service CIDR 설정하기
 
 vpc:
   id: "vpc-03841f019c1ecc756"
@@ -20,14 +20,15 @@ vpc:
     private:
       ap-northeast-2a: { id: subnet-03cea3f8ba88173ea }
       ap-northeast-2b: { id: subnet-0a99c143eca28ec73 }
-  controlPlaneSecurityGroupIDs: [ "sg-0871b732e2357246e" ]
+  controlPlaneSecurityGroupIDs: [ "sg-0871b732e2357246e" ]  # EKS Cluster 생성 시 Bastion 서버에서 API Server로 Inbound 허용거래 포함된 SG 추가
+                                                            # 기본 SG외에 추가로 SG 할당하는 방법
   clusterEndpoints:
     privateAccess: true
     publicAccess: false
   publicAccessCIDRs: [ 218.237.76.216/32 ]
 
 iam:
-  serviceRoleARN: "arn:aws:iam::xxxxxxxxxxxx:role/tb07297-eks-cluster-role"
+  serviceRoleARN: "arn:aws:iam::xxxxxxxxxxxx:role/tb07297-eks-cluster-role"  # EKS Cluster Control Plane Role
   withOIDC: true
 
 managedNodeGroups:
@@ -40,9 +41,9 @@ managedNodeGroups:
     subnets: [ subnet-03cea3f8ba88173ea, subnet-0a99c143eca28ec73 ]
     volumeSize: 80
     privateNetworking: true
-    tags: {finops-start: skip, finops-stop: skip}
+    tags: {finops-start: skip, finops-stop: skip}  # EKS Cluster NodeGroup Tag 설정하기
     iam:
-      instanceRoleARN: "arn:aws:iam::xxxxxxxxxxxx:role/tb07297-eks-nodegroup-role"
+      instanceRoleARN: "arn:aws:iam::xxxxxxxxxxxx:role/tb07297-eks-nodegroup-role"  # EKS Cluster Node Group Role
     securityGroups:
       attachIDs: [ sg-0871b732e2357246e ]
     volumeType: gp3
@@ -57,7 +58,7 @@ managedNodeGroups:
     privateNetworking: true
     tags: {finops-start: skip, finops-stop: skip}
     iam:
-      instanceRoleARN: "arn:aws:iam::xxxxxxxxxxxx:role/tb07297-eks-nodegroup-role"
+      instanceRoleARN: "arn:aws:iam::xxxxxxxxxxxx:role/tb07297-eks-nodegroup-role"  # EKS Cluster Node Group Role
     securityGroups:
       attachIDs: [ sg-0871b732e2357246e ]
     volumeType: gp3

@@ -201,7 +201,8 @@ EOF
                 "ec2:CreateLaunchTemplateVersion",
                 "ec2:DeleteLaunchTemplateVersions",
                 "ec2:GetLaunchTemplateData",
-                "ec2:ModifyLaunchTemplate"
+                "ec2:ModifyLaunchTemplate",
+                "ec2:RevokeSecurityGroupIngress"
             ],
             "Resource": "*"
         },
