@@ -9,6 +9,7 @@
 ### version       date        author        reason
 ###----------------------------------------------------------------------------------------------------
 ###    1.0     2026.03.28      ksk         First Version.
+###    1.1     2026.03.29      ksk         add clean file list
 #######################################################################################################
 # =========<<<< Signal command processing login (start) >>>>===========================================
 trap 'echo "$(date +${logdatefmt}) $0 signal(SIGINT) captured" | tee -a ${logfnm}; exit 1;' SIGINT
@@ -46,7 +47,7 @@ install-k9s()
     k9s version
 
     # clean up files
-    rm k9s_${OS}_${ARCH}.tar.gz
+    rm k9s_${OS}_${ARCH}.tar.gz README.md LICENSE
 }
 
 # =========<<<< Function Registration Area Marking Comment (end) >>>>==================================
