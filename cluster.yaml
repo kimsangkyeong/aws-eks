@@ -112,6 +112,7 @@ addons:
   - name: vpc-cni        # 기본 필수 애드온
     version: latest
     resolveConflicts: overwrite
+    serviceAccountRoleARN: arn:aws:iam::xxxxxxxxxxxx:role/role-eks-addon-vpc-cni
     configurationValues: |
       env:
         # 인스턴스당 할당 가능한 Pod IP 수를 늘리는 최적화 (Prefix Delegation)
@@ -139,6 +140,7 @@ addons:
     version: latest      # 특정 버전을 지정하거나 최신 버전 사용
     # [3] 충돌 해결 전략: eksctl 설정을 우선함
     resolveConflicts: overwrite
+    serviceAccountRoleARN: arn:aws:iam::xxxxxxxxxxxx:role/role-eks-addon-ebs-csi
     # [4] 드라이버 내부 세부 설정 (Helm Value 방식)
     configurationValues: |
       # 노드별로 배포되는 DaemonSet 설정
@@ -154,17 +156,16 @@ addons:
     version: latest      # 특정 버전을 지정하거나 최신 버전 사용
     # [3] 충돌 해결 전략: eksctl 설정을 우선함
     resolveConflicts: overwrite
+    serviceAccountRoleARN: arn:aws:iam::xxxxxxxxxxxx:role/role-eks-addon-efs-csi
     # [4] 드라이버 내부 세부 설정 (Helm Value 방식)
     configurationValues: |
-      # 노드별로 배포되는 DaemonSet 설정
-      node:
-        tolerateAllTaints: true # 모든 노드(Taint 포함)에 드라이버 설치
       # 컨트롤러 설정
       controller:
         replicaCount: 2 # 고가용성을 위해 컨트롤러 2개 배치
   - name: aws-mountpoint-s3-csi-driver # [추가] Amazon Mountpoint for S3 CSI Driver: S3를 파일 시스템처럼 마운트
     version: latest      # 특정 버전을 지정하거나 최신 버전 사용
     resolveConflicts: overwrite
+    serviceAccountRoleARN: arn:aws:iam::xxxxxxxxxxxx:role/role-eks-addon-s3-csi
     # [3] 드라이버 세부 설정
     configurationValues: |
       # 필요 시 로깅 레벨이나 추가 옵션 설정
