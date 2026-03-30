@@ -4,7 +4,7 @@
 ### Description : Install eksctl on the Bastion Server
 ### Information : * aws reference site
 ###               - https://docs.aws.amazon.com/ko_kr/eks/latest/eksctl/installation.html
-###
+###               - https://schema.eksctl.io/
 ###====================================================================================================
 ### version       date        author        reason
 ###----------------------------------------------------------------------------------------------------

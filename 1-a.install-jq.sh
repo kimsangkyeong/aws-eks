@@ -90,7 +90,8 @@ install-jq()
     if [ $(echo $PATH | grep "$HOME/bin:" | wc -l) -eq 0 ]; then  # $HOME/bin: PATH 추가
         export PATH=$HOME/bin:$PATH
         echo 'export PATH=$HOME/bin:$PATH' >> ~/.bashrc
-    elif [ $(echo $PATH | grep "$HOME/shell:" | wc -l) -eq 0 ]; then  # $HOME/shell: PATH 추가
+    fi
+    if [ $(echo $PATH | grep "$HOME/shell:" | wc -l) -eq 0 ]; then  # $HOME/shell: PATH 추가
         export PATH=$HOME/shell:$PATH
         echo 'export PATH=$HOME/shell:$PATH' >> ~/.bashrc
     fi
