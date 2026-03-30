@@ -80,17 +80,17 @@ accessConfig:
     # 2. 특정 IAM 역할(Role)에게 읽기 전용(Viewer) 권한 부여
     - principalARN: arn:aws:iam::xxxxxxxxxxxx:role/role-eks-addon-ebs-csi  # EBS CSI Driver
       accessPolicies:
-        - policyARN: arn:aws:iam::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy
+        - policyARN: arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy
           accessScope:
             type: cluster
     - principalARN: arn:aws:iam::xxxxxxxxxxxx:role/role-eks-addon-efs-csi # EFS CSI Driver
       accessPolicies:
-        - policyARN: arn:aws:iam::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy
+        - policyARN: arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy
           accessScope:
             type: cluster
     - principalARN: arn:aws:iam::xxxxxxxxxxxx:role/role-eks-addon-s3-csi # S3 CSI Driver
       accessPolicies:
-        - policyARN: arn:aws:iam::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy
+        - policyARN: arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy
           accessScope:
             type: cluster
 
