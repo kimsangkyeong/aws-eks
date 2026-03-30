@@ -30,6 +30,19 @@ vpc:
 iam:
   serviceRoleARN: "arn:aws:iam::xxxxxxxxxxxx:role/tb07297-eks-cluster-role"  # EKS Cluster Control Plane Role
   withOIDC: true
+  podIdentityAssociations:
+    - namespace: kube-system
+      serviceAccountName: aws-node
+      roleARN: arn:aws:iam::xxxxxxxxxxxx:role/role-eks-addon-vpc-cni
+    - namespace: kube-system
+      serviceAccountName: ebs-csi-controller-sa
+      roleARN: arn:aws:iam::xxxxxxxxxxxx:role/role-eks-addon-ebs-csi
+    - namespace: kube-system
+      serviceAccountName: efs-csi-controller-sa
+      roleARN: arn:aws:iam::xxxxxxxxxxxx:role/role-eks-addon-efs-csi
+    - namespace: kube-system
+      serviceAccountName: s3-csi-driver-sa
+      roleARN: arn:aws:iam::xxxxxxxxxxxx:role/role-eks-addon-s3-csi
 
 managedNodeGroups:
   - name: management
@@ -72,9 +85,9 @@ accessConfig:
 
   accessEntries:
     # 1. 특정 IAM 사용자에게 관리자(Admin) 권한 부여
-    - principalARN: arn:aws:iam::xxxxxxxxxxxx:user/tb07297
+    - principalARN: arn:aws:iam::xxxxxxxxxxxx:user/TB07297
       accessPolicies:
-        - policyARN: arn:aws:iam::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy
+        - policyARN: arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy
           accessScope:
             type: cluster
     # 2. 특정 IAM 역할(Role)에게 읽기 전용(Viewer) 권한 부여
@@ -97,8 +110,26 @@ accessConfig:
 # Managed Addons 설정
 addons:
   - name: vpc-cni        # 기본 필수 애드온
+    version: latest
+    resolveConflicts: overwrite
+    configurationValues: |
+      env:
+        # 인스턴스당 할당 가능한 Pod IP 수를 늘리는 최적화 (Prefix Delegation)
+        ENABLE_PREFIX_DELEGATION: "true"
+        WARM_PREFIX_TARGET: "1"
   - name: kube-proxy     # 기본 필수 애드온
+    version: latest
   - name: coredns        # 기본 필수 애드온
+    version: latest
+    configurationValues: |
+      # 고가용성을 위해 복제본 수 조절
+      replicaCount: 2
+      resources:
+        limits:
+          memory: 256Mi
+        requests:
+          cpu: 100m
+          memory: 128Mi
   - name: eks-pod-identity-agent # [추가] pod identity agent addon
     version: latest      # 특정 버전을 지정하거나 최신 버전 사용
   - name: metrics-server # [추가] Metrics Server 활성화
@@ -106,12 +137,42 @@ addons:
     resolveConflicts: overwrite  # [중요] 기존 설정과 충돌 시 덮어쓰기 설정
   - name: aws-ebs-csi-driver # [추가] Amazon EBS CSI Driver: 블록 스토리지 연동
     version: latest      # 특정 버전을 지정하거나 최신 버전 사용
-    serviceAccountRoleARN: "arn:aws:iam::xxxxxxxxxxxx:role/role-eks-addon-ebs-csi"
+    # [3] 충돌 해결 전략: eksctl 설정을 우선함
+    resolveConflicts: overwrite
+    # [4] 드라이버 내부 세부 설정 (Helm Value 방식)
+    configurationValues: |
+      # 노드별로 배포되는 DaemonSet 설정
+      node:
+        tolerateAllTaints: true # 모든 노드(Taint 포함)에 드라이버 설치
+      # 컨트롤러 설정
+      controller:
+        replicaCount: 2 # 고가용성을 위해 컨트롤러 2개 배치
+        # 볼륨 생성 시 자동으로 붙일 태그 설정
+        extraVolumeTags:
+          CreatedBy: eksctl-addon
   - name: aws-efs-csi-driver # [추가] Amazon EFS CSI Driver: 블록 스토리지 연동
     version: latest      # 특정 버전을 지정하거나 최신 버전 사용
-    serviceAccountRoleARN: "arn:aws:iam::xxxxxxxxxxxx:role/role-eks-addon-efs-csi"
+    # [3] 충돌 해결 전략: eksctl 설정을 우선함
+    resolveConflicts: overwrite
+    # [4] 드라이버 내부 세부 설정 (Helm Value 방식)
+    configurationValues: |
+      # 노드별로 배포되는 DaemonSet 설정
+      node:
+        tolerateAllTaints: true # 모든 노드(Taint 포함)에 드라이버 설치
+      # 컨트롤러 설정
+      controller:
+        replicaCount: 2 # 고가용성을 위해 컨트롤러 2개 배치
   - name: aws-mountpoint-s3-csi-driver # [추가] Amazon Mountpoint for S3 CSI Driver: S3를 파일 시스템처럼 마운트
     version: latest      # 특정 버전을 지정하거나 최신 버전 사용
-    serviceAccountRoleARN: "arn:aws:iam::xxxxxxxxxxxx:role/role-eks-addon-s3-csi"
+    resolveConflicts: overwrite
+    # [3] 드라이버 세부 설정
+    configurationValues: |
+      # 필요 시 로깅 레벨이나 추가 옵션 설정
+      logging:
+        level: info
+      # 모든 노드에 드라이버가 배포되도록 설정 (Taint 무시 여부 등)
+      node:
+        tolerateAllTaints: true
   - name: snapshot-controller # [추가] Snapshot Controller: 데이터 백업 및 복구 관리
     version: latest      # 특정 버전을 지정하거나 최신 버전 사용
+    resolveConflicts: overwrite
