@@ -154,7 +154,8 @@ EOF
                 "iam:TagOpenIDConnectProvider",
                 "iam:UntagOpenIDConnectProvider",
                 "iam:TagPolicy",
-                "iam:UntagPolicy"
+                "iam:UntagPolicy",
+                "iam:UpdateAssumeRolePolicy"
             ],
             "Resource": "*"
         },
@@ -191,6 +192,7 @@ EOF
                 "ec2:CreateRoute",
                 "ec2:AssociateRouteTable",
                 "ec2:CreateSecurityGroup",
+                "ec2:DeleteSecurityGroup",
                 "ec2:AuthorizeSecurityGroupIngress",
                 "ec2:AuthorizeSecurityGroupEgress",
                 "ec2:CreateTags",
