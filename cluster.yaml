@@ -33,7 +33,7 @@ iam:
 
 managedNodeGroups:
   - name: management
-    labels: [ { node-role.kubernetes.io/management: "1" }, {role: management } ]
+    labels: { role: management }  
     instanceType: t3.medium
     desiredCapacity: 1
     minSize: 1
@@ -48,7 +48,9 @@ managedNodeGroups:
       attachIDs: [ sg-0871b732e2357246e ]
     volumeType: gp3
   - name: worker
-    labels: [ { node-role.kubernetes.io/worker: "1" }, {role: worker} ]
+    labels: { role: worker } # { node-role.kubernetes.io/worker: "1" } 는 예약어라서 실행 불가. 생성완료 후
+          # 모든 노드에 'management' 역할을 부여 (ROLES 컬럼 채우기)
+          # kubectl label nodes -l eks.amazonaws.com/nodegroup=management-ng node-role.kubernetes.io/management=1
     instanceType: t3.medium
     desiredCapacity: 1
     minSize: 1
@@ -72,23 +74,23 @@ accessConfig:
     # 1. 특정 IAM 사용자에게 관리자(Admin) 권한 부여
     - principalARN: arn:aws:iam::xxxxxxxxxxxx:user/tb07297
       accessPolicies:
-        - policyARN: arn:aws:iam::aws:policy/AmazonEKSClusterAdminPolicy
+        - policyARN: arn:aws:iam::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy
           accessScope:
             type: cluster
     # 2. 특정 IAM 역할(Role)에게 읽기 전용(Viewer) 권한 부여
     - principalARN: arn:aws:iam::xxxxxxxxxxxx:role/role-eks-addon-ebs-csi  # EBS CSI Driver
       accessPolicies:
-        - policyARN: arn:aws:iam::aws:policy/AmazonEKSClusterAdminPolicy
+        - policyARN: arn:aws:iam::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy
           accessScope:
             type: cluster
     - principalARN: arn:aws:iam::xxxxxxxxxxxx:role/role-eks-addon-efs-csi # EFS CSI Driver
       accessPolicies:
-        - policyARN: arn:aws:iam::aws:policy/AmazonEKSClusterAdminPolicy
+        - policyARN: arn:aws:iam::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy
           accessScope:
             type: cluster
     - principalARN: arn:aws:iam::xxxxxxxxxxxx:role/role-eks-addon-s3-csi # S3 CSI Driver
       accessPolicies:
-        - policyARN: arn:aws:iam::aws:policy/AmazonEKSClusterAdminPolicy
+        - policyARN: arn:aws:iam::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy
           accessScope:
             type: cluster
 
