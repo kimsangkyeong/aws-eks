@@ -174,7 +174,8 @@ EOF
                 "StringEquals": {
                     "iam:PassedToService": [
                         "eks.amazonaws.com",
-                        "ec2.amazonaws.com"
+                        "ec2.amazonaws.com",
+                        "pods.eks.amazonaws.com"
                     ]
                 }
             }

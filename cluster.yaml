@@ -5,175 +5,125 @@ metadata:
   name: eks-tb07297
   region: ap-northeast-2
   version: "1.35"
-  tags: {tool: eksctl}    # EKS Cluster Tag 설정하기
+  forceUpdateVersion: false
+  tags:
+    tool: eksctl    # EKS Cluster Tag 설정하기
+    creator: kims
 
 kubernetesNetworkConfig:
   ipFamily: IPv4
   serviceIPv4CIDR: "10.128.0.0/16"    # kubernetes service CIDR 설정하기
 
-vpc:
-  id: "vpc-03841f019c1ecc756"
-  subnets:
-    public:
-      ap-northeast-2a: { id: subnet-0ba67de4e64599e8d }
-      ap-northeast-2b: { id: subnet-0f88fa66e41a53600 }
-    private:
-      ap-northeast-2a: { id: subnet-03cea3f8ba88173ea }
-      ap-northeast-2b: { id: subnet-0a99c143eca28ec73 }
-  controlPlaneSecurityGroupIDs: [ "sg-0871b732e2357246e" ]  # EKS Cluster 생성 시 Bastion 서버에서 API Server로 Inbound 허용거래 포함된 SG 추가
-                                                            # 기본 SG외에 추가로 SG 할당하는 방법
-  clusterEndpoints:
-    privateAccess: true
-    publicAccess: false
-  publicAccessCIDRs: [ 218.237.76.216/32 ]
+autoModeConfig:
+  enabled: false
 
 iam:
   serviceRoleARN: "arn:aws:iam::xxxxxxxxxxxx:role/tb07297-eks-cluster-role"  # EKS Cluster Control Plane Role
   withOIDC: true
-  podIdentityAssociations:
-    - namespace: kube-system
-      serviceAccountName: aws-node
-      roleARN: arn:aws:iam::xxxxxxxxxxxx:role/role-eks-addon-vpc-cni
-    - namespace: kube-system
-      serviceAccountName: ebs-csi-controller-sa
-      roleARN: arn:aws:iam::xxxxxxxxxxxx:role/role-eks-addon-ebs-csi
-    - namespace: kube-system
-      serviceAccountName: efs-csi-controller-sa
-      roleARN: arn:aws:iam::xxxxxxxxxxxx:role/role-eks-addon-efs-csi
-    - namespace: kube-system
-      serviceAccountName: s3-csi-driver-sa
-      roleARN: arn:aws:iam::xxxxxxxxxxxx:role/role-eks-addon-s3-csi
 
-managedNodeGroups:
-  - name: management
-    labels: { role: management }  
-    instanceType: t3.medium
-    desiredCapacity: 1
-    minSize: 1
-    maxSize: 3
-    subnets: [ subnet-03cea3f8ba88173ea, subnet-0a99c143eca28ec73 ]
-    volumeSize: 100
-    privateNetworking: true
-    tags: {finops-start: skip, finops-stop: skip}  # EKS Cluster NodeGroup Tag 설정하기
-    iam:
-      instanceRoleARN: "arn:aws:iam::xxxxxxxxxxxx:role/tb07297-eks-nodegroup-role"  # EKS Cluster Node Group Role
-    securityGroups:
-      attachIDs: [ sg-0871b732e2357246e ]
-    volumeType: gp3
-  - name: worker
-    labels: { role: worker } # { node-role.kubernetes.io/worker: "1" } 는 예약어라서 실행 불가. 생성완료 후
-          # 모든 노드에 'management' 역할을 부여 (ROLES 컬럼 채우기)
-          # kubectl label nodes -l eks.amazonaws.com/nodegroup=management-ng node-role.kubernetes.io/management=1
-    instanceType: t3.medium
-    desiredCapacity: 1
-    minSize: 1
-    maxSize: 3
-    subnets: [ subnet-03cea3f8ba88173ea, subnet-0a99c143eca28ec73 ]
-    volumeSize: 100
-    privateNetworking: true
-    tags: {finops-start: skip, finops-stop: skip}
-    iam:
-      instanceRoleARN: "arn:aws:iam::xxxxxxxxxxxx:role/tb07297-eks-nodegroup-role"  # EKS Cluster Node Group Role
-    securityGroups:
-      attachIDs: [ sg-0871b732e2357246e ]
-    volumeType: gp3
 accessConfig:
   # authenticationMode 종류:
   # - API: 오직 Access Entry만 사용 (가장 보안이 높음)
   # - API_AND_CONFIG_MAP: 기존 aws-auth와 병행 (마이그레이션용)
   authenticationMode: API_AND_CONFIG_MAP
+  bootstrapClusterCreatorAdminPermissions: true  # cluster creator admin 자동권한 부여설정
 
   accessEntries:
     # 1. 특정 IAM 사용자에게 관리자(Admin) 권한 부여
     - principalARN: arn:aws:iam::xxxxxxxxxxxx:user/TB07297
+      type: STANDARD
       accessPolicies:
         - policyARN: arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy
           accessScope:
             type: cluster
     # 2. 특정 IAM 역할(Role)에게 읽기 전용(Viewer) 권한 부여
     - principalARN: arn:aws:iam::xxxxxxxxxxxx:role/role-eks-addon-ebs-csi  # EBS CSI Driver
+      type: STANDARD
       accessPolicies:
         - policyARN: arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy
           accessScope:
             type: cluster
     - principalARN: arn:aws:iam::xxxxxxxxxxxx:role/role-eks-addon-efs-csi # EFS CSI Driver
+      type: STANDARD
       accessPolicies:
         - policyARN: arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy
           accessScope:
             type: cluster
     - principalARN: arn:aws:iam::xxxxxxxxxxxx:role/role-eks-addon-s3-csi # S3 CSI Driver
+      type: STANDARD
       accessPolicies:
         - policyARN: arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy
           accessScope:
             type: cluster
 
+vpc:
+  id: "vpc-03841f019c1ecc756"
+  subnets:
+    public:
+      ap-northeast-2a:
+        id: subnet-0ba67de4e64599e8d
+      ap-northeast-2b:
+        id: subnet-0f88fa66e41a53600
+    private:
+      ap-northeast-2a:
+        id: subnet-03cea3f8ba88173ea
+      ap-northeast-2b:
+        id: subnet-0a99c143eca28ec73
+  sharedNodeSecurityGroup:
+  clusterEndpoints:
+    privateAccess: true
+    publicAccess: false
+  publicAccessCIDRs:
+    - 218.237.76.216/32
+  controlPlaneSecurityGroupIDs:
+    - "sg-0871b732e2357246e"   # EKS Cluster 생성 시 Bastion 서버에서 API Server로 Inbound 허용거래 포함된 SG 추가
+                               # 기본 SG외에 추가로 SG 할당하는 방법
+
 # Managed Addons 설정
 addons:
+  - name: eks-pod-identity-agent # 제일 처음 설치를 해야 pod identity 처리됨
+    version: latest      # 특정 버전을 지정하거나 최신 버전 사용
   - name: vpc-cni        # 기본 필수 애드온
     version: latest
     resolveConflicts: overwrite
-    serviceAccountRoleARN: arn:aws:iam::xxxxxxxxxxxx:role/role-eks-addon-vpc-cni
-    configurationValues: |
-      env:
-        # 인스턴스당 할당 가능한 Pod IP 수를 늘리는 최적화 (Prefix Delegation)
-        ENABLE_PREFIX_DELEGATION: "true"
-        WARM_PREFIX_TARGET: "1"
+    podIdentityAssociations:
+      - namespace: kube-system
+        serviceAccountName: aws-node
+        roleARN: arn:aws:iam::xxxxxxxxxxxx:role/role-eks-addon-vpc-cni
   - name: kube-proxy     # 기본 필수 애드온
     version: latest
   - name: coredns        # 기본 필수 애드온
     version: latest
-    configurationValues: |
-      # 고가용성을 위해 복제본 수 조절
-      replicaCount: 2
-      resources:
-        limits:
-          memory: 256Mi
-        requests:
-          cpu: 100m
-          memory: 128Mi
-  - name: eks-pod-identity-agent # [추가] pod identity agent addon
-    version: latest      # 특정 버전을 지정하거나 최신 버전 사용
   - name: metrics-server # [추가] Metrics Server 활성화
     version: latest      # 특정 버전을 지정하거나 최신 버전 사용
     resolveConflicts: overwrite  # [중요] 기존 설정과 충돌 시 덮어쓰기 설정
   - name: aws-ebs-csi-driver # [추가] Amazon EBS CSI Driver: 블록 스토리지 연동
     version: latest      # 특정 버전을 지정하거나 최신 버전 사용
-    # [3] 충돌 해결 전략: eksctl 설정을 우선함
     resolveConflicts: overwrite
-    serviceAccountRoleARN: arn:aws:iam::xxxxxxxxxxxx:role/role-eks-addon-ebs-csi
-    # [4] 드라이버 내부 세부 설정 (Helm Value 방식)
-    configurationValues: |
-      # 노드별로 배포되는 DaemonSet 설정
-      node:
-        tolerateAllTaints: true # 모든 노드(Taint 포함)에 드라이버 설치
-      # 컨트롤러 설정
-      controller:
-        replicaCount: 2 # 고가용성을 위해 컨트롤러 2개 배치
-        # 볼륨 생성 시 자동으로 붙일 태그 설정
-        extraVolumeTags:
-          CreatedBy: eksctl-addon
+    podIdentityAssociations:
+      - namespace: kube-system
+        serviceAccountName: ebs-csi-controller-sa
+        roleARN: arn:aws:iam::xxxxxxxxxxxx:role/role-eks-addon-ebs-csi
   - name: aws-efs-csi-driver # [추가] Amazon EFS CSI Driver: 블록 스토리지 연동
     version: latest      # 특정 버전을 지정하거나 최신 버전 사용
-    # [3] 충돌 해결 전략: eksctl 설정을 우선함
     resolveConflicts: overwrite
-    serviceAccountRoleARN: arn:aws:iam::xxxxxxxxxxxx:role/role-eks-addon-efs-csi
-    # [4] 드라이버 내부 세부 설정 (Helm Value 방식)
-    configurationValues: |
-      # 컨트롤러 설정
-      controller:
-        replicaCount: 2 # 고가용성을 위해 컨트롤러 2개 배치
+    podIdentityAssociations:
+      - namespace: kube-system
+        serviceAccountName: efs-csi-controller-sa
+        roleARN: arn:aws:iam::xxxxxxxxxxxx:role/role-eks-addon-efs-csi
   - name: aws-mountpoint-s3-csi-driver # [추가] Amazon Mountpoint for S3 CSI Driver: S3를 파일 시스템처럼 마운트
     version: latest      # 특정 버전을 지정하거나 최신 버전 사용
     resolveConflicts: overwrite
-    serviceAccountRoleARN: arn:aws:iam::xxxxxxxxxxxx:role/role-eks-addon-s3-csi
-    # [3] 드라이버 세부 설정
-    configurationValues: |
-      # 필요 시 로깅 레벨이나 추가 옵션 설정
-      logging:
-        level: info
-      # 모든 노드에 드라이버가 배포되도록 설정 (Taint 무시 여부 등)
-      node:
-        tolerateAllTaints: true
+    podIdentityAssociations:
+      - namespace: kube-system
+        serviceAccountName: s3-csi-driver-sa
+        roleARN: arn:aws:iam::xxxxxxxxxxxx:role/role-eks-addon-s3-csi
   - name: snapshot-controller # [추가] Snapshot Controller: 데이터 백업 및 복구 관리
     version: latest      # 특정 버전을 지정하거나 최신 버전 사용
     resolveConflicts: overwrite
+addonsConfig:
+  # specifies whether to automatically apply pod identity associations for supported addons that require IAM permissions.
+  autoApplyPodIdentityAssociations: false
+  disableDefaultAddons: false    # cluster 생성 시 default addon 설치 여부
+privateCluster:
+  enabled: false  # 모든 노드에서 Outbound Internet Access 불가처리 여부
