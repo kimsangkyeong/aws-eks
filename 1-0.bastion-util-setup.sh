@@ -7,6 +7,7 @@
 ### version       date        author        reason
 ###----------------------------------------------------------------------------------------------------
 ###    1.0     2026.03.28      ksk         First Version.
+###    1.1     2026.04.02      ksk         add install utils
 #######################################################################################################
 # =========<<<< Signal command processing login (start) >>>>===========================================
 trap 'echo "$(date +${logdatefmt}) $0 signal(SIGINT) captured" | tee -a ${logfnm}; exit 1;' SIGINT
@@ -51,6 +52,9 @@ K9S_PARAM_ARCH=$PARAM_ARCH
 # session manager parameters
 SESSIONM_PARAM_OS="AL2023"
 SESSIONM_PARAM_ARCH=$PARAM_ARCH
+
+# aws keypair for eks parameters
+CREATEKEYPAIR_PARAM_KEYNAME="key-mgmt-eks-node"
 
 # =========<<<< Important Global Variable Registration Area Marking Comment (end) >>>>=================
 
@@ -145,6 +149,13 @@ echo -e "\n-------------------------\n"
 echo "# c. aws session manager 도구 설치 및 환경설정"
 echo "1-c.install-session-manager.sh $SESSIONM_PARAM_OS $SESSIONM_PARAM_ARCH"
 ./1-c.install-session-manager.sh
+jobProcess "checking"   # monitoring - checking
+
+# d. bastion 서버에서 eks worker node ssh 접속을 위한 keypair 생성 작업
+echo -e "\n-------------------------\n"
+echo "# d. bastion 서버에서 eks worker node ssh 접속을 위한 keypair 생성 작업"
+echo "1-d.create-keypair.sh $CREATEKEYPAIR_PARAM_KEYNAME"
+./1-d.create-keypair.sh $CREATEKEYPAIR_PARAM_KEYNAME
 
 jobProcess "end"   # monitoring - end
 # =========<<<< Main Logic Coding Area Marking Comment (end) >>>>======================================
