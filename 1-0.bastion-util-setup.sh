@@ -48,6 +48,10 @@ AWSCLIV2_PARAM_ARCH=$PARAM_ARCH
 # k9s parameters
 K9S_PARAM_ARCH=$PARAM_ARCH
 
+# session manager parameters
+SESSIONM_PARAM_OS="AL2023"
+SESSIONM_PARAM_ARCH=$PARAM_ARCH
+
 # =========<<<< Important Global Variable Registration Area Marking Comment (end) >>>>=================
 
 # =========<<<< Function Registration Area Marking Comment (start) >>>>================================
@@ -134,6 +138,13 @@ echo -e "\n-------------------------\n"
 echo "# b. k9s 도구 설치 및 환경설정"
 echo "1-b.install-k9s.sh $K9S_PARAM_ARCH"
 ./1-b.install-k9s.sh $K9S_PARAM_ARCH
+jobProcess "checking"   # monitoring - checking
+
+# c. aws session manager 도구 설치 및 환경설정
+echo -e "\n-------------------------\n"
+echo "# c. aws session manager 도구 설치 및 환경설정"
+echo "1-c.install-session-manager.sh $SESSIONM_PARAM_OS $SESSIONM_PARAM_ARCH"
+./1-c.install-session-manager.sh
 
 jobProcess "end"   # monitoring - end
 # =========<<<< Main Logic Coding Area Marking Comment (end) >>>>======================================
