@@ -206,7 +206,8 @@ EOF
                 "ec2:GetLaunchTemplateData",
                 "ec2:ModifyLaunchTemplate",
                 "ec2:RevokeSecurityGroupIngress",
-                "ec2:DeleteSecurityGroup"
+                "ec2:DeleteSecurityGroup",
+                "ec2:CreateKeyPair"
             ],
             "Resource": "*"
         },
