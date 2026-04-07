@@ -1,6 +1,6 @@
 #!/bin/bash
 #######################################################################################################
-### File Name : 1-0.bastion-util-setup.sh
+### File Name : 1.bastion-util-setup.sh
 ### Description : Install utils on the Bastion Server
 ### Information :
 ###====================================================================================================
