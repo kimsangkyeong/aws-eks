@@ -13,8 +13,7 @@ metadata:
   version: "1.35"
   forceUpdateVersion: false
   tags:
-    tool: eksctl    # EKS Cluster Tag 설정하기
-    creator: kims
+<eks_cluster_tags>
 
 kubernetesNetworkConfig:
   ipFamily: IPv4
@@ -65,16 +64,7 @@ accessConfig:
 vpc:
   id: <vpc_id>
   subnets:
-    public:
-      ap-northeast-2a:
-        id: subnet-0ba67de4e64599e8d
-      ap-northeast-2b:
-        id: subnet-0f88fa66e41a53600
-    private:
-      ap-northeast-2a:
-        id: subnet-03cea3f8ba88173ea
-      ap-northeast-2b:
-        id: subnet-0a99c143eca28ec73
+<eks_subnets>
   sharedNodeSecurityGroup:
   clusterEndpoints:
     privateAccess: true
@@ -82,7 +72,8 @@ vpc:
   publicAccessCIDRs:
     - 218.237.76.216/32
   controlPlaneSecurityGroupIDs:
-    - "sg-0871b732e2357246e"   # EKS Cluster 생성 시 Bastion 서버에서 API Server로 Inbound 허용거래 포함된 SG 추가
+<controlplanesecuritygroup_ids>
+                               # EKS Cluster 생성 시 Bastion 서버에서 API Server로 Inbound 허용거래 포함된 SG 추가
                                # 기본 SG외에 추가로 SG 할당하는 방법
 
 # Managed Addons 설정
