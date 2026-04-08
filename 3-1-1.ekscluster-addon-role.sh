@@ -1,6 +1,6 @@
 #!/bin/bash
 #######################################################################################################
-### File Name : 2-1.ekscluster-addon-role.sh
+### File Name : 3-1-1.ekscluster-addon-role.sh
 ### Description : role of ekscluster and nodegroup
 ### Information : eksctl schema  정보
 ###               https://schema.eksctl.io/
@@ -8,6 +8,7 @@
 ### version       date        author        reason
 ###----------------------------------------------------------------------------------------------------
 ###    1.0     2026.03.30      ksk         First Version.
+###    1.1     2026.04.08      ksk         create eks addon roles
 #######################################################################################################
 # =========<<<< Signal command processing login (start) >>>>===========================================
 trap 'echo "$(date +${logdatefmt}) $0 signal(SIGINT) captured" | tee -a ${logfnm}; exit 1;' SIGINT
@@ -24,6 +25,17 @@ logdatefmt="%Y%m%d-%H:%M:%S" # date/time format variable for logging info:used i
 START_TIME=0    # job 시작 시간
 END_TIME=0      # job 종료 시간
 ELAPSED_TIME=0  # job 수행 시간
+
+# replace text variables
+PROJECT_NAME=""  # 프로젝트 이름
+ENVIRONMENT=""   # 환경구분
+
+# 변수
+ROLE_NAME=""
+TRUST_POLICY_DOC=""
+INLINE_POLICY_NAME=""
+INLINE_POLICY_DOC=""
+MANAGED_POLICIES=("")
 
 # =========<<<< Important Global Variable Registration Area Marking Comment (end) >>>>=================
 
@@ -74,14 +86,64 @@ jobProcess()
 }
 
 #############################################################################
-## Function Name : getRoleForEbsCsiDriver
-## Description : EKS Cluster Addon VPC CNI Driver를 위한 Role 정보조회
+## Function Name : createRole
+## Description : Role 생성공통 처리하기
+## Information :
+#############################################################################
+createRole()
+{
+
+    echo "--- 검사 시작: $ROLE_NAME ---"
+
+    # 1. Role 존재 여부 확인 및 생성
+    # --query 'Role.Arn' 은 성공 시 ARN을 반환하며, 실패 시 에러 코드를 냅니다.
+    if aws iam get-role --role-name "$ROLE_NAME" > /dev/null 2>&1; then
+        echo "[SKIP] IAM Role '$ROLE_NAME' 이 이미 존재합니다."
+    else
+        echo "[CREATE] IAM Role '$ROLE_NAME' 을 생성합니다."
+        echo "TRUST_POLICY_DOC"
+        echo "$TRUST_POLICY_DOC"
+        aws iam create-role \
+            --role-name "$ROLE_NAME" \
+            --assume-role-policy-document "$TRUST_POLICY_DOC"
+    fi
+
+    # 2. 정책 적용 (Policy는 존재하더라도 덮어쓰기(Overwrite)가 가능하므로 매번 실행하는 것이 안전합니다)
+    echo "[UPDATE] Inline 및 Managed Policy 설정을 동기화합니다..."
+
+    # Inline Policy 업데이트 - custom policy 존재한 경우
+    if [ "$INLINE_POLICY_NAME" != "none" ]; then
+        echo "[$INLINE_POLICY_NAME] Custom Inline Policy 설정을 동기화합니다..."
+        echo "INLINE_POLICY_DOC"
+        echo "$INLINE_POLICY_DOC"
+        aws iam put-role-policy \
+            --role-name "$ROLE_NAME" \
+            --policy-name "$INLINE_POLICY_NAME" \
+            --policy-document "$INLINE_POLICY_DOC"
+    fi
+
+    # Managed Policies 연결
+    echo "MANAGED_POLICIES - ${MANAGED_POLICIES[@]}"
+    for policy_arn in "${MANAGED_POLICIES[@]}"; do
+        echo "[$policy_arn] AWS Managed Policy 설정을 동기화합니다..."
+        aws iam attach-role-policy --role-name "$ROLE_NAME" --policy-arn "$policy_arn"
+    done
+
+}
+
+#############################################################################
+## Function Name : createRoleForVPCCNIDriver
+## Description : EKS Cluster Addon VPC CNI Driver를 위한 Role 생성하기
 ## Information : Pod Identity 방식으로 IRSA 처리목적
 #############################################################################
-getRoleForVPCCNIDriver()
+createRoleForVPCCNIDriver()
 {
-    # Role Trust Relationship
-    VPCCNIDriverRoleForEKS=$(cat <<EOF
+
+    # 1. 설정
+    ROLE_NAME="role-${PROJECT_NAME}-${ENVIRONMENT}-eks-addon-vpc-cni"
+
+    # 2. Trust Relationship (Heredoc)
+    TRUST_POLICY_DOC=$(cat <<EOF
 {
     "Version": "2012-10-17",
     "Statement": [
@@ -99,37 +161,36 @@ getRoleForVPCCNIDriver()
 }
 EOF
 )
-    echo "$VPCCNIDriverRoleForEKS"
-}
-
-#############################################################################
-## Function Name : getPolicyOfRoleForVPCCNIDriver
-## Description : EKS Cluster Addon VPC CNI Driver Role을 위한 Role 정보조회
-## Information :
-#############################################################################
-getPolicyOfRoleForVPCCNIDriver()
-{
-    # AWS Managed Policy
-    AWSManagedPolicyForVPCCNIDriver=$(cat <<EOF
-    AmazonEKS_CNI_Policy 
+    # 3. Inline Policy (Heredoc) - custom policy
+    INLINE_POLICY_NAME="none"
+    INLINE_POLICY_DOC=$(cat <<EOF
+                        none
 EOF
 )
 
-    echo " -- < aws managed policy >--- "
-    echo "$AWSManagedPolicyForVPCCNIDriver"
-    echo ""
+    # 4. Managed Policy 리스트
+    MANAGED_POLICIES=(
+        "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
+    )
+
+    # 5. create role
+    createRole
 
 }
 
 #############################################################################
-## Function Name : getRoleForEbsCsiDriver
-## Description : EKS Cluster Addon EBS CSI Driver를 위한 Role 정보조회
+## Function Name : createRoleForEBSCSIDriver
+## Description : EKS Cluster Addon EBS CSI Driver를 위한 Role 생성하기
 ## Information : Pod Identity 방식으로 IRSA 처리목적
 #############################################################################
-getRoleForEbsCsiDriver()
+createRoleForEBSCSIDriver()
 {
-    # Role Trust Relationship
-    EBSCSIDriverRoleForEKS=$(cat <<EOF
+
+    # 1. 설정
+    ROLE_NAME="role-${PROJECT_NAME}-${ENVIRONMENT}-eks-addon-ebs-csi"
+
+    # 2. Trust Relationship (Heredoc)
+    TRUST_POLICY_DOC=$(cat <<EOF
 {
     "Version": "2012-10-17",
     "Statement": [
@@ -147,18 +208,10 @@ getRoleForEbsCsiDriver()
 }
 EOF
 )
-    echo "$EBSCSIDriverRoleForEKS"
-}
 
-#############################################################################
-## Function Name : getPolicyOfRoleForEbsCsiDriver
-## Description : EKS Cluster Addon EBS CSI Driver Role을 위한 Role 정보조회
-## Information :
-#############################################################################
-getPolicyOfRoleForEbsCsiDriver()
-{
-    # AWS Custom Policy
-    AWSCustomPolicyForEbsCsiDriver=$(cat <<EOF
+    # 3. Inline Policy (Heredoc) - custom policy
+    INLINE_POLICY_NAME="EKSAddonEBSCSIDriverPolicy"
+    INLINE_POLICY_DOC=$(cat <<EOF
 {
     "Version": "2012-10-17",
     "Statement": [
@@ -200,21 +253,29 @@ getPolicyOfRoleForEbsCsiDriver()
 }
 EOF
 )
-    echo " -- < aws custom policy >--- "
-    echo "$AWSCustomPolicyForEbsCsiDriver"
-    echo ""
+
+    # 4. Managed Policy 리스트
+    MANAGED_POLICIES=(
+    )
+
+    # 5. create role
+    createRole
 
 }
 
 #############################################################################
-## Function Name : getRoleForEfsCsiDriver
-## Description : EKS Cluster Addon EFS CSI Driver를 위한 Role 정보조회
+## Function Name : createRoleForEFSCSIDriver
+## Description : EKS Cluster Addon EFS CSI Driver를 위한 Role 생성하기
 ## Information : Pod Identity 방식으로 IRSA 처리목적
 #############################################################################
-getRoleForEfsCsiDriver()
+createRoleForEFSCSIDriver()
 {
-    # Role Trust Relationship
-    EFSCSIDriverRoleForEKS=$(cat <<EOF
+
+    # 1. 설정
+    ROLE_NAME="role-${PROJECT_NAME}-${ENVIRONMENT}-eks-addon-efs-csi"
+
+    # 2. Trust Relationship (Heredoc)
+    TRUST_POLICY_DOC=$(cat <<EOF
 {
     "Version": "2012-10-17",
     "Statement": [
@@ -232,17 +293,10 @@ getRoleForEfsCsiDriver()
 }
 EOF
 )
-    echo "$EFSCSIDriverRoleForEKS"
-}
-#############################################################################
-## Function Name : getPolicyOfRoleForEfsCsiDriver
-## Description : EKS Cluster Addon EFS CSI Driver Role을 위한 Role 정보조회
-## Information :
-#############################################################################
-getPolicyOfRoleForEfsCsiDriver()
-{
-    # AWS Custom Policy
-    AWSCustomPolicyForEfsCsiDriver=$(cat <<EOF
+
+    # 3. Inline Policy (Heredoc) - custom policy
+    INLINE_POLICY_NAME="EKSAddonEFSCSIDriverPolicy"
+    INLINE_POLICY_DOC=$(cat <<EOF
 {
     "Version": "2012-10-17",
     "Statement": [
@@ -282,21 +336,29 @@ getPolicyOfRoleForEfsCsiDriver()
 }
 EOF
 )
-    echo " -- < aws custom policy >--- "
-    echo "$AWSCustomPolicyForEfsCsiDriver"
-    echo ""
+
+    # 4. Managed Policy 리스트
+    MANAGED_POLICIES=(
+    )
+
+    # 5. create role
+    createRole
 
 }
 
 #############################################################################
-## Function Name : getRoleForS3CsiDriver
-## Description : EKS Cluster Addon S3 CSI Driver를 위한 Role 정보조회
+## Function Name : createRoleForS3CSIDriver
+## Description : EKS Cluster Addon S3 CSI Driver를 위한 Role 생성하기
 ## Information : Pod Identity 방식으로 IRSA 처리목적
 #############################################################################
-getRoleForS3CsiDriver()
+createRoleForS3CSIDriver()
 {
-    # Role Trust Relationship
-    S3CSIDriverRoleForEKS=$(cat <<EOF
+
+    # 1. 설정
+    ROLE_NAME="role-${PROJECT_NAME}-${ENVIRONMENT}-eks-addon-s3-csi"
+
+    # 2. Trust Relationship (Heredoc)
+    TRUST_POLICY_DOC=$(cat <<EOF
 {
     "Version": "2012-10-17",
     "Statement": [
@@ -314,18 +376,10 @@ getRoleForS3CsiDriver()
 }
 EOF
 )
-    echo "$S3CSIDriverRoleForEKS"
-}
 
-#############################################################################
-## Function Name : getPolicyOfRoleForS3CsiDriver
-## Description : EKS Cluster Addon S3 CSI Driver Role을 위한 Role 정보조회
-## Information :
-#############################################################################
-getPolicyOfRoleForS3CsiDriver()
-{
-    # AWS Custom Policy
-    AWSCustomPolicyForS3CsiDriver=$(cat <<EOF
+    # 3. Inline Policy (Heredoc) - custom policy
+    INLINE_POLICY_NAME="EKSAddonS3CSIDriverPolicy"
+    INLINE_POLICY_DOC=$(cat <<EOF
 {
     "Version": "2012-10-17",
     "Statement": [
@@ -333,7 +387,7 @@ getPolicyOfRoleForS3CsiDriver()
             "Sid": "MountpointS3CanListBuckets",
             "Effect": "Allow",
             "Action": "s3:ListBucket",
-            "Resource": "arn:aws:s3:::<S3 Object Bucket>"
+            "Resource": "arn:aws:s3:::*"
         },
         {
             "Sid": "MountpointS3CanReadWriteObjects",
@@ -344,15 +398,19 @@ getPolicyOfRoleForS3CsiDriver()
                 "s3:AbortMultipartUpload",
                 "s3:DeleteObject"
             ],
-            "Resource": "arn:aws:s3:::<S3 Object Bucket>/*"
+            "Resource": "arn:aws:s3:::*/*"
         }
     ]
 }
 EOF
 )
-    echo " -- < aws custom policy >--- "
-    echo "$AWSCustomPolicyForS3CsiDriver"
-    echo ""
+
+    # 4. Managed Policy 리스트
+    MANAGED_POLICIES=(
+    )
+
+    # 5. create role
+    createRole
 
 }
 
@@ -361,44 +419,32 @@ EOF
 # =========<<<< Main Logic Coding Area Marking Comment (start) >>>>====================================
 jobProcess "start"  # monitoring - start
 
-printf "\n-------------------------\n"
-echo "1. eksctl 환경파일 작성에 필요한 EKS Cluster addon VPC CNI Driver Role에 필요한 정책 설정하기"
-getPolicyOfRoleForVPCCNIDriver
+PROJECT_NAME=$1
+ENVIRONMENT=$2
+
+if [ -z "$PROJECT_NAME" -o -z "$ENVIRONMENT" ]; then
+    echo "Usage: ./3-1-1.ekscluster-addon-role.sh <project_name> <environment>"
+    echo "Example: ./3-1-1.ekscluster-addon-role.sh hellow dev "
+    exit 1
+fi
 
 printf "\n-------------------------\n"
-echo "2. eksctl 환경파일 작성에 필요한 EKS Cluster addon VPC CNI Driver Role Trust Relationship 설정하기"
-echo "   ==> eks cluster addon VPC CNI Driver role name example : role-eks-addon-vpc-cni "
-getRoleForVPCCNIDriver
+echo "1. eksctl 환경파일 작성에 필요한 EKS Cluster addon VPC CNI Driver Role 생성 하기"
+createRoleForVPCCNIDriver
+jobProcess "checking"   # monitoring - checking
 
 printf "\n-------------------------\n"
-echo "3. eksctl 환경파일 작성에 필요한 EKS Cluster addon EBS CSI Driver Role에 필요한 정책 설정하기"
-echo "   ==> eks clsuter addon EBS CSI Driver custom policy name example : policy-eks-addon-ebs-csi "
-getPolicyOfRoleForEbsCsiDriver
+echo "2. eksctl 환경파일 작성에 필요한 EKS Cluster addon EBS CSI Driver Role 생성 하기"
+createRoleForEBSCSIDriver
+jobProcess "checking"   # monitoring - checking
 
 printf "\n-------------------------\n"
-echo "4. eksctl 환경파일 작성에 필요한 EKS Cluster addon EBS CSI Driver Role Trust Relationship 설정하기"
-echo "   ==> eks cluster addon EBS CSI Driver role name example : role-eks-addon-ebs-csi "
-getRoleForEbsCsiDriver
+echo "3. eksctl 환경파일 작성에 필요한 EKS Cluster addon EFS CSI Driver Role 생성 하기"
+createRoleForEFSCSIDriver
+jobProcess "checking"   # monitoring - checking
 
 printf "\n-------------------------\n"
-echo "5. eksctl 환경파일 작성에 필요한 EKS Cluster addon EFS CSI Driver Role에 필요한 정책 설정하기"
-echo "   ==> eks clsuter addon EFS CSI Driver custom policy name example : policy-eks-addon-efs-csi "
-getPolicyOfRoleForEfsCsiDriver
-
-printf "\n-------------------------\n"
-echo "6. eksctl 환경파일 작성에 필요한 EKS Cluster addon EFS CSI Driver Role Trust Relationship 설정하기"
-echo "   ==> eks clsuter addon EFS CSI Driver custom policy name example : role-eks-addon-efs-csi "
-getRoleForEfsCsiDriver
-
-printf "\n-------------------------\n"
-echo "7. eksctl 환경파일 작성에 필요한 EKS Cluster addon S3 CSI Driver Role에 필요한 정책 설정하기"
-echo "   ==> eks clsuter addon S3 CSI Driver custom policy name example : policy-eks-addon-s3-csi "
-getPolicyOfRoleForS3CsiDriver
-
-printf "\n-------------------------\n"
-echo "8. eksctl 환경파일 작성에 필요한 EKS Cluster addon S3 CSI Driver Role Trust Relationship 설정하기"
-echo "   ==> eks clsuter addon S3 CSI Driver custom policy name example : role-eks-addon-s3-csi "
-getRoleForS3CsiDriver
+echo "4. eksctl 환경파일 작성에 필요한 EKS Cluster addon S3 CSI Driver Role 생성 하기"
+createRoleForS3CSIDriver
 
 jobProcess "end"   # monitoring - end
-# =========<<<< Main Logic Coding Area Marking Comment (end) >>>>======================================
