@@ -1,6 +1,6 @@
 #!/bin/bash
 #######################################################################################################
-### File Name : 3-1-2.render_eksctl_cluster_config.sh
+### File Name : 2-2.render_eksctl_cluster_config.sh
 ### Description : eksctl의 config 파일을 template을 이용하여 변수 치환 작업
 ### Information : eksctl schema  정보
 ###               https://schema.eksctl.io/
@@ -8,6 +8,7 @@
 ### version       date        author        reason
 ###----------------------------------------------------------------------------------------------------
 ###    1.0     2026.04.07      ksk         First Version.
+###    1.1     2026.04.10      ksk         add creat security groups
 #######################################################################################################
 # =========<<<< Signal command processing login (start) >>>>===========================================
 trap 'echo "$(date +${logdatefmt}) $0 signal(SIGINT) captured" | tee -a ${logfnm}; exit 1;' SIGINT
@@ -33,7 +34,9 @@ OUTPUT_FILE=""   # 변수 치환된eksctl cluster config 파일
 ACCOUNT_ID=""    # AWS 계정ID
 EKS_SUBNETS=""       # EKS Cluster Subnets
 EKS_CLUSTER_TAGS=""  # EKS Cluster Tags
+CSHARESG_ID=""   # EKS Cluster Control Plane & Node Shared Node Security Group
 CPSG_IDS=""       # EKS ControlPlaneSecurityID, EKS의 기본 SG외에 추가로 SG 할당하는 방법
+CPSG_ID1=""       # EKS ControlPlaneSecurityID1
 
 # =========<<<< Important Global Variable Registration Area Marking Comment (end) >>>>=================
 
@@ -49,14 +52,14 @@ jobProcess()
 
     if [ $jobStatus == "start" ]; then
         START_TIME=$(date +%s)
-        echo -e "\n<< 설치 작업시작>> : $(date +%Y%m%d-%H:%M:%S)"
+        echo -e "\n<< config 변환 작업시작>> : $(date +%Y%m%d-%H:%M:%S)"
     else
         if [ $jobStatus == "checking" ]; then
             printf "...........\n"
             printf "<< 작업중간체크>> : $(date +%Y%m%d-%H:%M:%S) \n"
         else
             printf "===========\n"
-            printf "<< 설치작업완료>> : $(date +%Y%m%d-%H:%M:%S) \n"
+            printf "<< config 변환 작업완료>> : $(date +%Y%m%d-%H:%M:%S) \n"
         fi
         END_TIME=$(date +%s)
         ELAPSED_TIME=$(( END_TIME - START_TIME ))
@@ -213,6 +216,48 @@ EOF
 }
 
 #############################################################################
+## Function Name : getClusterSharedNodeSGID
+## Description : Security Group Tag 이름을 이용하여 SG ID 조회하기.
+##               EKS Cluster Control Plane & Shared Node Security Group
+## Information :
+#############################################################################
+getClusterSharedNodeSGID()
+{
+
+    CSHARESG_TAG_NAME="sgrp-${PROJECT_NAME}-${ENVIRONMENT}-eks-cluster-${PROJECT_NAME}-${ENVIRONMENT}-sharednode" 
+
+    CSHARESG_ID=$(aws ec2 describe-security-groups \
+               --filters "Name=tag:Name,Values=${CSHARESG_TAG_NAME}" \
+               --query "SecurityGroups[0].GroupId" \
+               --output text)
+
+    # 조회 결과가 없을 경우 예외 처리
+    if [ "$CSHARESG_ID" == "None" ] || [ -z "$CSHARESG_ID" ]; then
+        echo "${CSHARESG_TAG_NAME} SecurityGroup 을 생성합니다."
+        CSHARESG_ID=$(aws ec2 create-security-group \
+                        --group-name "$CSHARESG_TAG_NAME" \
+                        --description "EKS Cluster Control Plane And Shared Node Security Group" \
+                        --vpc-id "$VPC_ID" --query "GroupId" --output text)
+        if [ "$CSHARESG_ID" == "None" ] || [ -z "$CSHARESG_ID" ]; then
+            echo "${CSHARESG_TAG_NAME} SecurityGroup 생성중 오류가 발생했습니다."
+            exit 1
+        fi
+        # sg 생성시 만들어 지는 default egress outbound rule 삭제
+        aws ec2 revoke-security-group-egress --group-id "$CSHARESG_ID" --protocol all --port all --cidr 0.0.0.0/0 > /dev/null
+
+        # Tags 추가
+        SG_TAGS=(
+            "Key=project,Value=$PROJECT_NAME"
+            "Key=environment,Value=$ENVIRONMENT"
+            "Key=Name,Value=$CSHARESG_TAG_NAME"
+        )
+        aws ec2 create-tags --resources "$CSHARESG_ID" --tags "${SG_TAGS[@]}"
+    fi
+
+    echo "$CSHARESG_ID"
+}
+
+#############################################################################
 ## Function Name : getControlPlaneSGID
 ## Description : Security Group Tag 이름을 이용하여 SG ID 조회하기.
 ##               EKS의API Server 접속관리를 위해 기본외 SG 추가
@@ -221,7 +266,7 @@ EOF
 getControlPlaneSGID()
 {
 
-    CPSG_TAG_NAME1="tb07297-eks-app-sg"  # test
+    CPSG_TAG_NAME1="sgrp-${PROJECT_NAME}-${ENVIRONMENT}-eks-cluster-${PROJECT_NAME}-${ENVIRONMENT}-apiserver-access"
     CPSG_ID1=$(aws ec2 describe-security-groups \
                --filters "Name=tag:Name,Values=${CPSG_TAG_NAME1}" \
                --query "SecurityGroups[0].GroupId" \
@@ -229,8 +274,25 @@ getControlPlaneSGID()
 
     # 조회 결과가 없을 경우 예외 처리
     if [ "$CPSG_ID1" == "None" ] || [ -z "$CPSG_ID1" ]; then
-        echo "❌ Error: ${CPSG_TAG_NAME1}의 SecurityGroup ID를 찾을 수 없습니다."
-        exit 1
+        echo "${CPSG_TAG_NAME1} SecurityGroup 을 생성합니다."
+        CPSG_ID1=$(aws ec2 create-security-group \
+                        --group-name "$CPSG_TAG_NAME1" \
+                        --description "EKS Cluster Control Plane apiserver access Extra Security Group" \
+                        --vpc-id "$VPC_ID" --query "GroupId" --output text)
+        if [ "$CPSG_ID1" == "None" ] || [ -z "$CPSG_ID1" ]; then
+            echo "${CPSG_TAG_NAME1} SecurityGroup 생성중 오류가 발생했습니다."
+            exit 1
+        fi
+        # sg 생성시 만들어 지는 default egress outbound rule 삭제
+        aws ec2 revoke-security-group-egress --group-id "$CPSG_ID1" --protocol all --port all --cidr 0.0.0.0/0 > /dev/null
+
+        # Tags 추가
+        SG_TAGS=(
+            "Key=project,Value=$PROJECT_NAME"
+            "Key=environment,Value=$ENVIRONMENT"
+            "Key=Name,Value=$CPSG_TAG_NAME1"
+        )
+        aws ec2 create-tags --resources "$CPSG_ID1" --tags "${SG_TAGS[@]}"
     fi
 
 IFS= read -r -d '' CPSG_BLOCK <<EOF
@@ -244,10 +306,114 @@ EOF
     echo "$CPSG_IDS"
 }
 
+#############################################################################
+## Function Name : applyRulesforSecurityGroup
+## Description : Security Group의 ingress, egress 설정하기
+## Information :
+#############################################################################
+applyRulesforSecurityGroup()
+{
+    local sg_id=$1
+    local rule_type=$2
+    shift 2
+    rules=("$@")
+
+    for rule in "${rules[@]}"; do
+        # 쉼표(,)를 기준으로 필드 분리
+        IFS=',' read -r proto from_port to_port source desc <<< "$rule"
+
+        if [[ "$proto" == "-1" || "$proto" == "all" ]]; then
+            echo "Applying $rule_type rule: [$desc] ($proto $from_port $to_port from $source)"
+        else
+            echo "Applying $rule_type rule: [$desc] ($proto $from_port-$to_port from $source)"
+        fi
+
+        # 대상이 SG ID(sg-*)인지 CIDR인지에 따라 JSON 구조 생성
+        if [[ $source == sg-* ]]; then
+
+            # Security Group ID 기반 규칙
+            if [[ "$proto" == "-1" || "$proto" == "all" ]]; then
+                PERM_JSON="[{\"IpProtocol\":\"-1\",\"UserIdGroupPairs\":[{\"GroupId\":\"$source\",\"Description\":\"$desc\"}]}]"
+            else
+                PERM_JSON="[{\"IpProtocol\":\"$proto\",\"FromPort\":$from_port,\"ToPort\":$to_port,\"UserIdGroupPairs\":[{\"GroupId\":\"$source\",\"Description\":\"$desc\"}]}]"
+            fi
+        else
+            # CIDR 기반 규칙
+            if [[ "$proto" == "-1" || "$proto" == "all" ]]; then
+                # 프로토콜이 All인 경우 포트 필드를 제외한 JSON 생성
+                PERM_JSON="[{\"IpProtocol\":\"-1\",\"IpRanges\":[{\"CidrIp\":\"$source\",\"Description\":\"$desc\"}]}]"
+            else
+                # 기존과 동일하게 포트 포함
+                PERM_JSON="[{\"IpProtocol\":\"$proto\",\"FromPort\":$from_port,\"ToPort\":$to_port,\"IpRanges\":[{\"CidrIp\":\"$source\",\"Description\":\"$desc\"}]}]"
+            fi
+        fi
+
+        # AWS CLI 실행 (JSON 구조를 --ip-permissions에 전달)
+        if [[ "$rule_type" == "ingress" ]]; then
+            echo "aws ec2 authorize-security-group-ingress --group-id \"$sg_id\" --ip-permissions \"$PERM_JSON\"  "
+            aws ec2 authorize-security-group-ingress \
+                --group-id "$sg_id" \
+                --ip-permissions "$PERM_JSON" > /dev/null 2>&1 || echo "  (Existing rule or error)"
+        else
+            echo "aws ec2 authorize-security-group-ingress --group-id \"$sg_id\" --ip-permissions \"$PERM_JSON\"  "
+            aws ec2 authorize-security-group-egress \
+                --group-id "$sg_id" \
+                --ip-permissions "$PERM_JSON" > /dev/null 2>&1 || echo "  (Existing rule or error)"
+        fi
+    done
+}
+
+#############################################################################
+## Function Name : applyRulesforEKSClusterSG
+## Description : EKS Cluster Main SG, SharedNode SG ingress/egress rule 설정
+## Information :
+#############################################################################
+applyRulesforEKSClusterS()
+{
+    # 1. VPC의 모든 CIDR 가져오기
+    VPC_CIDR_LIST=($(aws ec2 describe-vpcs --vpc-ids "$VPC_ID" --query "Vpcs[0].CidrBlockAssociationSet[*].CidrBlock" --output text))
+
+    EGRESS_RULES_TO_EFS=()
+    INGRESS_RULES_FOR_APISERVER=()
+    for cidr in "${VPC_CIDR_LIST[@]}"; do
+        # 2. EFS Outbound 규칙 배열 생성
+        EGRESS_RULES_TO_EFS+=("tcp,2049,2049,$cidr,Allow node to VPC CIDR $cidr for access EFS")
+        # 3. APISERVER Inbound 규칙 배열 생성
+        INGRESS_RULES_FOR_APISERVER+=("tcp,443,443,$cidr,Allow node to VPC CIDR $cidr for access EKS APIServer")
+    done
+
+    # rule variables format:  protocol, from_port, to_port, securit group id or cidr, description
+
+    # Cluster Shared Node Security Group Ingress Rules
+    CSHARESG_INGRESS_RULES=(
+        "all,all,all,${CSHARESG_ID},Allow managed and unmanaged nodes to communicate with each other (all ports)"     # Cluster Controlplane self 호출inbound 통신 허용
+        "tcp,443,443,${CPSG_ID1},Allow External SG to EKS Cluster API Server"    # Cluster Dataplane 호출inbound >통신 허용
+    )
+    # Cluster Shared Node Security Group Egress Rules
+    CSHARSG_EGRESS_RULES=(
+        "all,all,all,${CSHARESG_ID},Allow nodes to communicate with each other (all ports)"    # Cluster Dataplane 호출outbound 통신 허용
+        "${EGRESS_RULES_TO_EFS[@]}"
+    )
+
+    # Control Plane extra Security Group Ingress Rules
+    CPSG_INGRESS_RULES=(
+        "${INGRESS_RULES_FOR_APISERVER[@]}"
+    )
+    # Control Plane extra Security Group Egress Rules
+    CPSG_EGRESS_RULES=(
+        "tcp,443,443,${CSHARESG_ID},Allow External SG to EKS Cluster API Server"     # outbound 통신 허용to EKS Cluster API Server
+    )
+
+    echo "[PROCESS] Cluster SG 규칙 등록 중..."
+    applyRulesforSecurityGroup "$CSHARESG_ID" "ingress" "${CSHARESG_INGRESS_RULES[@]}"
+    applyRulesforSecurityGroup "$CSHARESG_ID" "egress"  "${CSHARSG_EGRESS_RULES[@]}"
+    applyRulesforSecurityGroup "$CPSG_ID1"    "ingress" "${CPSG_INGRESS_RULES[@]}"
+    applyRulesforSecurityGroup "$CPSG_ID1"    "egress"  "${CPSG_EGRESS_RULES[@]}"
+}
+
 # =========<<<< Function Registration Area Marking Comment (end) >>>>==================================
 
 # =========<<<< Main Logic Coding Area Marking Comment (start) >>>>====================================
-jobProcess "start"  # monitoring - start
 
 # 변수 할당
 PROJECT_NAME=$1  # 프로젝트 이름
@@ -256,10 +422,15 @@ TEMPLATE_FILE=$3  # template 파일
 OUTPUT_FILE=$4  # 변수 치환된 파일
 
 if [ -z "$PROJECT_NAME" -o -z "$ENVIRONMENT" -o -z "$TEMPLATE_FILE" -o -z "$OUTPUT_FILE" ]; then
-    echo "Usage: ./3-1-0.render_eksctl_cluster_config.sh <project_name> <environment> <template_filename> <output_filename>"
-    echo "Example: ./3-1-0.render_eksctl_cluster_config.sh hellow dev eksctl_cluster_conf.yaml hellow-dev-eksctl_cluster_conf.yaml "
+    echo "Usage: ./2-2.render_eksctl_cluster_config.sh <project_name> <environment> <template_filename> <output_filename>"
+    echo "Example: ./2-2.render_eksctl_cluster_config.sh hellow dev eksctl_cluster_conf.yaml hellow-dev-eksctl_cluster_conf.yaml "
     exit 1
 fi
+
+printf "\n#########################\n"
+printf "\n-<< ./2-2.render_eksctl_cluster_config.sh  $PROJECT_NAME $ENVIRONMENT $TEMPLATE_FILE $OUTPUT_FILE >>--\n"
+printf "\n#########################\n"
+jobProcess "start"  # monitoring - start
 
 printf "\n-------------------------\n"
 echo "1. getAccountID"
@@ -282,8 +453,18 @@ getEKSClusterTags
 jobProcess "checking"   # monitoring - checking
 
 printf "\n-------------------------\n"
-echo "5. getControlPlaneSGID"
+echo "5. getClusterSharedNodeSGID"
+getClusterSharedNodeSGID
+jobProcess "checking"   # monitoring - checking
+
+printf "\n-------------------------\n"
+echo "6. getControlPlaneSGID"
 getControlPlaneSGID
+jobProcess "checking"   # monitoring - checking
+
+printf "\n-------------------------\n"
+echo "7. applyRulesforEKSClusterS"
+applyRulesforEKSClusterS
 
 sed -e "s/<account_id>/${ACCOUNT_ID}/g" \
     -e "s/<project_name>/${PROJECT_NAME}/g" \
@@ -291,6 +472,8 @@ sed -e "s/<account_id>/${ACCOUNT_ID}/g" \
     -e "s/<vpc_id>/${VPC_ID}/g" \
     -e "s|<eks_subnets>|${EKS_SUBNETS}|g" \
     -e "s|<eks_cluster_tags>|${EKS_CLUSTER_TAGS}|g" \
+    -e "s/<eks_main_sg>/${CMAINSG_ID}/g" \
+    -e "s/<eks_shared_node_sg>/${CSHARESG_ID}/g" \
     -e "s/<controlplanesecuritygroup_ids>/${CPSG_IDS}/g" \
     $TEMPLATE_FILE > $OUTPUT_FILE
 

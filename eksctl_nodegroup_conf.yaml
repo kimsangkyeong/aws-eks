@@ -34,6 +34,8 @@ managedNodeGroups:
       attachIDs:
 <mgmt_node_sg_ids>
                     # node에서 application 관리용Security Group
+      withShared: false   # eksctl이 자동으로 만드는 노드 SG들을 붙이지 않으려면 false 처리
+      withLocal: false    # eksctl이 자동으로 만드는 노드 SG들을 붙이지 않으려면 false 처리
     volumeType: gp3
     disableIMDSv1: true       # IMDSv2 강제 적용
     taints:
@@ -60,6 +62,8 @@ managedNodeGroups:
       attachIDs:
 <worker_node_sg_ids>
                       # node에서 application 관리용Security Group
+      withShared: false   # eksctl이 자동으로 만드는 노드 SG들을 붙이지 않으려면 false 처리
+      withLocal: false    # eksctl이 자동으로 만드는 노드 SG들을 붙이지 않으려면 false 처리
     volumeType: gp3
     disableIMDSv1: true       # IMDSv2 강제 적용
     taints:

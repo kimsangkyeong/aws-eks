@@ -196,6 +196,7 @@ EOF
                 "ec2:DeleteSecurityGroup",
                 "ec2:AuthorizeSecurityGroupIngress",
                 "ec2:AuthorizeSecurityGroupEgress",
+                "ec2:RevokeSecurityGroupEgress",
                 "ec2:CreateTags",
                 "ec2:RunInstances",
                 "ec2:TerminateInstances",

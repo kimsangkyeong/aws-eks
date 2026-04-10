@@ -1,7 +1,7 @@
 #!/bin/bash
 #######################################################################################################
-### File Name : 3-1-1.ekscluster-addon-role.sh
-### Description : role of ekscluster control plane and nodegroup, addon
+### File Name : 2-1.ekscluster-addon-role.sh
+### Description : role of ekscluster and nodegroup
 ### Information : eksctl schema  정보
 ###               https://schema.eksctl.io/
 ###====================================================================================================
@@ -488,7 +488,6 @@ EOF
 
     # 6. create role
     createRole
-
 }
 
 #############################################################################
@@ -566,73 +565,24 @@ EOF
 
 }
 
-#############################################################################
-## Function Name : createRoleForCoreDNS
-## Description : EKS Cluster Addon CoreDNS를 위한 Role 생성하기
-## Information : Pod Identity 방식으로 IRSA 처리목적
-#############################################################################
-createRoleForCoreDNS()
-{
-
-    # 1. 설정
-    ROLE_NAME="role-${PROJECT_NAME}-${ENVIRONMENT}-eks-addon-coredns"
-
-    # 2. Trust Relationship (Heredoc)
-    TRUST_POLICY_DOC=$(cat <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Principal": {
-                "Service": "pods.eks.amazonaws.com"
-            },
-            "Action": [
-                "sts:AssumeRole",
-                "sts:TagSession"
-            ]
-        }
-    ]
-}
-EOF
-)
-    # 3. Inline Policy (Heredoc) - custom policy
-    INLINE_POLICY_NAME="none"
-    INLINE_POLICY_DOC=$(cat <<EOF
-                        none
-EOF
-)
-
-    # 4. Managed Policy 리스트
-    MANAGED_POLICIES=(
-        "arn:aws:iam::aws:policy/AmazonEKSCoreDNSController"
-    )
-
-    # 5. Role Tags
-    ROLE_TAGS=(
-        "Key=Name,Value=${ROLE_NAME}"
-        "Key=project,Value=${PROJECT_NAME}"
-        "Key=environment,Value=${ENVIRONMENT}"
-    )
-
-    # 6. create role
-    createRole
-
-}
-
 # =========<<<< Function Registration Area Marking Comment (end) >>>>==================================
 
 # =========<<<< Main Logic Coding Area Marking Comment (start) >>>>====================================
-jobProcess "start"  # monitoring - start
 
 PROJECT_NAME=$1
 ENVIRONMENT=$2
 
 if [ -z "$PROJECT_NAME" -o -z "$ENVIRONMENT" ]; then
-    echo "Usage: ./3-1-1.ekscluster-addon-role.sh <project_name> <environment>"
-    echo "Example: ./3-1-1.ekscluster-addon-role.sh hellow dev "
+    echo "Usage: ./2-1.ekscluster-addon-role.sh <project_name> <environment>"
+    echo "Example: ./2-1.ekscluster-addon-role.sh hellow dev "
     exit 1
 fi
+
+printf "\n#########################\n"
+printf "\n-<< ./2-1.ekscluster-addon-role.sh $PROJECT_NAME $ENVIRONMENT >>--\n"
+printf "\n#########################\n"
+
+jobProcess "start"  # monitoring - start
 
 ###  << 이하EKS Cluster Control Plane & Nodegroup Role 생성>> ###
 printf "\n-------------------------\n"
@@ -664,11 +614,6 @@ jobProcess "checking"   # monitoring - checking
 printf "\n-------------------------\n"
 echo "addon-4. eksctl 환경파일 작성에 필요한 EKS Cluster addon S3 CSI Driver Role 생성 하기"
 createRoleForS3CSIDriver
-jobProcess "checking"   # monitoring - checking
-
-printf "\n-------------------------\n"
-echo "addon-5. eksctl 환경파일 작성에 필요한 EKS Cluster addon CoreDNS Role 생성 하기"
-createRoleForCoreDNS
 
 jobProcess "end"   # monitoring - end
 

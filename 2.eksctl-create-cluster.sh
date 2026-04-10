@@ -1,6 +1,6 @@
 #!/bin/bash
 #######################################################################################################
-### File Name : 3-1.eksctl-create-cluster.sh
+### File Name : 2.eksctl-create-cluster.sh
 ### Description : Install eks cluster with eksctl 
 ### Information :
 ###====================================================================================================
@@ -31,10 +31,10 @@ TEMPLATE_FILE="eksctl_cluster_conf.yaml"  # template 파일  - 필수 항목
 OUTPUT_FILE="${PROJECT_NAME}-${ENVIRONMENT}-${TEMPLATE_FILE}"  # 변수 치환된 파일
 
 # eks cluster control plane, nodegroup 및 addon role 생성하기
-./3-1-1.ekscluster-addon-role.sh  $PROJECT_NAME  $ENVIRONMENT
+./2-1.ekscluster-addon-role.sh  $PROJECT_NAME  $ENVIRONMENT
 
 # template의 값을 치환하여 eksctl cluster config 파일 생성하기
-./3-1-2.render_eksctl_cluster_config.sh  $PROJECT_NAME  $ENVIRONMENT $TEMPLATE_FILE $OUTPUT_FILE
+./2-2.render_eksctl_cluster_config.sh  $PROJECT_NAME  $ENVIRONMENT $TEMPLATE_FILE $OUTPUT_FILE
 
 if [ $# -ge 1 ]; then
     if [ $1 == "dry" ]; then
@@ -49,8 +49,6 @@ else
 
     #eksctl get cluster -r ap-northeast-2
 
-    echo "kubectl label nodes -l eks.amazonaws.com/nodegroup=management node-role.kubernetes.io/management=1"
-    echo "kubectl label nodes -l eks.amazonaws.com/nodegroup=worker node-role.kubernetes.io/worker=1"
 fi
 # =========<<<< Main Logic Coding Area Marking Comment (end) >>>>======================================
 

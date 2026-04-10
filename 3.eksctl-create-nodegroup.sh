@@ -1,6 +1,6 @@
 #!/bin/bash
 #######################################################################################################
-### File Name : 3-2.eksctl-create-nodegroup.sh
+### File Name : 3.eksctl-create-nodegroup.sh
 ### Description : Install eks cluster nodegroup with eksctl 
 ### Information :
 ###====================================================================================================
@@ -31,7 +31,7 @@ TEMPLATE_FILE="eksctl_nodegroup_conf.yaml"  # template 파일 - 필수 항목
 OUTPUT_FILE="${PROJECT_NAME}-${ENVIRONMENT}-${TEMPLATE_FILE}"  # 변수 치환된 파일
 
 # template의 값을 치환하여 eksctl nodegroup config 파일 생성하기
-./3-2-0.render_eksctl_nodegroup_config.sh  $PROJECT_NAME  $ENVIRONMENT $TEMPLATE_FILE $OUTPUT_FILE
+./3-1.render_eksctl_nodegroup_config.sh  $PROJECT_NAME  $ENVIRONMENT $TEMPLATE_FILE $OUTPUT_FILE
 
 if [ $# -ge 1 ]; then
     if [ $1 == "dry" ]; then
@@ -44,9 +44,8 @@ if [ $# -ge 1 ]; then
 else
     eksctl create nodegroup -f ${OUTPUT_FILE}
 
-    #eksctl get nodegroup -r ap-northeast-2
+    kubectl label nodes -l role=management node-role.kubernetes.io/management=1
+    kubectl label nodes -l role=worker node-role.kubernetes.io/worker=1
 
-    echo "kubectl label nodes -l eks.amazonaws.com/nodegroup=management node-role.kubernetes.io/management=1"
-    echo "kubectl label nodes -l eks.amazonaws.com/nodegroup=worker node-role.kubernetes.io/worker=1"
 fi
 # =========<<<< Main Logic Coding Area Marking Comment (end) >>>>======================================

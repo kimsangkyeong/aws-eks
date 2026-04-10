@@ -65,12 +65,12 @@ vpc:
   id: <vpc_id>
   subnets:
 <eks_subnets>
-  sharedNodeSecurityGroup:
+  sharedNodeSecurityGroup: <eks_shared_node_sg>  # for pre-defined shared node SG
   clusterEndpoints:
     privateAccess: true
     publicAccess: false
   publicAccessCIDRs:
-    - 218.237.76.216/32
+                               # list type - xxx.xxx.xx.xx/32
   controlPlaneSecurityGroupIDs:
 <controlplanesecuritygroup_ids>
                                # EKS Cluster 생성 시 Bastion 서버에서 API Server로 Inbound 허용거래 포함된 SG 추가
@@ -95,8 +95,6 @@ addons:
       - namespace: kube-system
         serviceAccountName: aws-node
         roleARN: arn:aws:iam::<account_id>:role/role-<project_name>-<environment>-eks-addon-vpc-cni
-        tags:
-          rolename: role-<project_name>-<environment>-eks-addon-vpc-cni
   - name: kube-proxy     # 기본 필수 애드온
     version: latest
     tags:
@@ -109,12 +107,6 @@ addons:
       component: "Networking"
       service: "CoreDNS"
       Name: coredns
-    podIdentityAssociations:
-      - namespace: kube-system
-        serviceAccountName: coredns
-        roleARN: arn:aws:iam::<account_id>:role/role-<project_name>-<environment>-eks-addon-coredns
-        tags:
-          rolename: role-<project_name>-<environment>-eks-addon-coredns
   - name: metrics-server # [추가] Metrics Server 활성화
     version: latest      # 특정 버전을 지정하거나 최신 버전 사용
     resolveConflicts: overwrite  # [중요] 기존 설정과 충돌 시 덮어쓰기 설정
@@ -133,8 +125,6 @@ addons:
       - namespace: kube-system
         serviceAccountName: ebs-csi-controller-sa
         roleARN: arn:aws:iam::<account_id>:role/role-<project_name>-<environment>-eks-addon-ebs-csi
-        tags:
-          rolename: role-<project_name>-<environment>-eks-addon-ebs-csi
   - name: aws-efs-csi-driver # [추가] Amazon EFS CSI Driver: 블록 스토리지 연동
     version: latest      # 특정 버전을 지정하거나 최신 버전 사용
     resolveConflicts: overwrite
@@ -146,8 +136,6 @@ addons:
       - namespace: kube-system
         serviceAccountName: efs-csi-controller-sa
         roleARN: arn:aws:iam::<account_id>:role/role-<project_name>-<environment>-eks-addon-efs-csi
-        tags:
-          rolename: role-<project_name>-<environment>-eks-addon-efs-csi
   - name: aws-mountpoint-s3-csi-driver # [추가] Amazon Mountpoint for S3 CSI Driver: S3를 파일 시스템처럼 마운트
     version: latest      # 특정 버전을 지정하거나 최신 버전 사용
     resolveConflicts: overwrite
@@ -159,8 +147,6 @@ addons:
       - namespace: kube-system
         serviceAccountName: s3-csi-driver-sa
         roleARN: arn:aws:iam::<account_id>:role/role-<project_name>-<environment>-eks-addon-s3-csi
-        tags:
-          rolename: role-<project_name>-<environment>-eks-addon-s3-csi
   - name: snapshot-controller # [추가] Snapshot Controller: 데이터 백업 및 복구 관리
     version: latest      # 특정 버전을 지정하거나 최신 버전 사용
     resolveConflicts: overwrite

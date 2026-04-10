@@ -1,6 +1,6 @@
 #!/bin/bash
 #######################################################################################################
-### File Name : render1.sh
+### File Name : 3-1.render_eksctl_nodegroup_config.sh
 ### Description : eksctl의nodegroup config 파일을 template을 이용하여 변수 치환 작업
 ### Information : eksctl schema  정보
 ###               https://schema.eksctl.io/
@@ -28,12 +28,17 @@ ELAPSED_TIME=0  # job 수행 시간
 # replace text variables
 PROJECT_NAME=""  # 프로젝트 이름
 ENVIRONMENT=""   # 환경구분
+TEMPLATE_FILE="" # template 파일
+OUTPUT_FILE=""   # 변수 치환된eksctl nodegroup config 파일
 ACCOUNT_ID=""    # AWS 계정ID
+VPC_ID=""        # VPC ID
+EKS_NG_MGMT_NAME=""       # EKS Cluster Nodegroup Management Name
 EKS_NG_MGMT_SUBNETS=""    # EKS Cluster Nodegroup Management Subnets
 EKS_NG_MGMT_LABELS=""     # EKS Cluster Nodegroup Management LABELS
 EKS_NG_MGMT_TAGS=""       # EKS Cluster Nodegroup Management TAGS
 EKS_NG_MGMT_SG_IDS=""     # EKS Cluster Nodegroup Management SG IDS
 EKS_NG_MGMT_TAINTS=""     # EKS Cluster Nodegroup Management TAGS
+EKS_NG_WORK_NAME=""       # EKS Cluster Nodegroup Worker Name
 EKS_NG_WORK_SUBNETS=""    # EKS Cluster Nodegroup Worker Subnets
 EKS_NG_WORK_LABELS=""     # EKS Cluster Nodegroup Worker LABELS
 EKS_NG_WORK_TAGS=""       # EKS Cluster Nodegroup Worker TAGS
@@ -54,14 +59,14 @@ jobProcess()
 
     if [ $jobStatus == "start" ]; then
         START_TIME=$(date +%s)
-        echo -e "\n<< 설치 작업시작>> : $(date +%Y%m%d-%H:%M:%S)"
+        echo -e "\n<< config 변환 작업시작>> : $(date +%Y%m%d-%H:%M:%S)"
     else
         if [ $jobStatus == "checking" ]; then
             printf "...........\n"
             printf "<< 작업중간체크>> : $(date +%Y%m%d-%H:%M:%S) \n"
         else
             printf "===========\n"
-            printf "<< 설치작업완료>> : $(date +%Y%m%d-%H:%M:%S) \n"
+            printf "<< config 변환 작업완료>> : $(date +%Y%m%d-%H:%M:%S) \n"
         fi
         END_TIME=$(date +%s)
         ELAPSED_TIME=$(( END_TIME - START_TIME ))
@@ -104,6 +109,26 @@ getAccountID()
     fi
 
     echo "$ACCOUNT_ID"
+}
+
+#############################################################################
+## Function Name : getNgMgmtName
+## Description : EKS Cluster Management Node Group Name
+## Information :
+#############################################################################
+getNgMgmtName()
+{
+    EKS_NG_MGMT_NAME="management"       # EKS Cluster Nodegroup Management Name
+}
+
+#############################################################################
+## Function Name : getNgWorkName
+## Description : EKS Cluster Worker Node Group Name
+## Information :
+#############################################################################
+getNgWorkName()
+{
+    EKS_NG_WORK_NAME="worker"       # EKS Cluster Worker Management Name
 }
 
 #############################################################################
@@ -199,6 +224,7 @@ getNgMgmtLabels()
     #    IFS= 을 read 앞에 추가하여 공백유지하기
 IFS= read -r -d '' LABELS_BLOCK <<EOF
       role: management
+      nodegroup: management
 EOF
 
     # 2. sed에서 사용할 수 있도록 줄바꿈 처리 (\n 추가)
@@ -218,7 +244,8 @@ getNgWorkLabels()
     # 1. 치환할 내용을 변수에 저장 (들여쓰기 포함) Template의 띄워쓰기 연계.
     #    IFS= 을 read 앞에 추가하여 공백유지하기
 IFS= read -r -d '' LABELS_BLOCK <<EOF
-      role: management
+      role: worker
+      nodegroup: worker
 EOF
 
     # 2. sed에서 사용할 수 있도록 줄바꿈 처리 (\n 추가)
@@ -238,13 +265,13 @@ getNgMgmtTags()
     # 1. 치환할 내용을 변수에 저장 (들여쓰기 포함) Template의 띄워쓰기 연계.
     #    IFS= 을 read 앞에 추가하여 공백유지하기
 IFS= read -r -d '' TAGS_BLOCK <<EOF
-      finops-start: skip
-      finops-stop: skip
+      role: ${EKS_NG_MGMT_NAME}
+      Name: "eks-nodegroup-${PROJECT_NAME}-${ENVIRONMENT}-${EKS_NG_MGMT_NAME}"
 EOF
 
     # 2. sed에서 사용할 수 있도록 줄바꿈 처리 (\n 추가)
     # sed는 s/A/B/ 구문에서 B에 실제 줄바꿈이 있으면 에러가 나기 때문에 이 처리가 필수입니다.
-    EKS_NG_MGMT_LABELS="${TAGS_BLOCK//$'\n'/\\n}"
+    EKS_NG_MGMT_TAGS="${TAGS_BLOCK//$'\n'/\\n}"
 
     echo "$EKS_NG_MGMT_TAGS"
 }
@@ -259,8 +286,8 @@ getNgWorkTags()
     # 1. 치환할 내용을 변수에 저장 (들여쓰기 포함) Template의 띄워쓰기 연계.
     #    IFS= 을 read 앞에 추가하여 공백유지하기
 IFS= read -r -d '' TAGS_BLOCK <<EOF
-      finops-start: skip
-      finops-stop: skip
+      role: ${EKS_NG_WORK_NAME}
+      Name: "eks-nodegroup-${PROJECT_NAME}-${ENVIRONMENT}-${EKS_NG_WORK_NAME}"
 EOF
 
     # 2. sed에서 사용할 수 있도록 줄바꿈 처리 (\n 추가)
@@ -271,27 +298,109 @@ EOF
 }
 
 #############################################################################
+## Function Name : getVpcID
+## Description : VPC Tag 이름을 이용하여 VPC ID 조회하기
+## Information :
+#############################################################################
+getVpcID()
+{
+
+    VPC_TAG_NAME="vpc-${PROJECT_NAME}-${ENVIRONMENT}"
+    VPC_TAG_NAME="tb07297-vpc"  # test
+    VPC_ID=$(aws ec2 describe-vpcs \
+              --filters "Name=tag:Name,Values=${VPC_TAG_NAME}" \
+              --query "Vpcs[0].VpcId" \
+              --output text)
+
+    # 조회 결과가 없을 경우 예외 처리
+    if [ "$VPC_ID" == "None" ] || [ -z "$VPC_ID" ]; then
+        echo "❌ Error: ${VPC_TAG_NAME}의 VPC ID를 찾을 수 없습니다."
+        exit 1
+    fi
+
+    echo "$VPC_ID"
+}
+
+#############################################################################
 ## Function Name : getNgMgmtSgIDS
-## Description : security group tag name을 이용하여 Node group SG 추가(appl.용)
+## Description : Management Nodegroup의 Node용 Application SG 생성(업무팀에게 관리 제공)
 ## Information :
 #############################################################################
 getNgMgmtSgIDS()
 {
+    # --------- <  application 용 접근 환경 > ---------------
+    NGMGMTSG_TAG_NAME1="sgrp-${PROJECT_NAME}-${ENVIRONMENT}-eks-cluster-${PROJECT_NAME}-${ENVIRONMENT}-ng-mgmt-for-appl"
 
-    NGSG_TAG_NAME1="tb07297-eks-app-sg"  # test
-    NGSG_ID1=$(aws ec2 describe-security-groups \
-               --filters "Name=tag:Name,Values=${NGSG_TAG_NAME1}" \
+    NGMGMTSG_ID1=$(aws ec2 describe-security-groups \
+               --filters "Name=tag:Name,Values=${NGMGMTSG_TAG_NAME1}" \
                --query "SecurityGroups[0].GroupId" \
                --output text)
 
     # 조회 결과가 없을 경우 예외 처리
-    if [ "$NGSG_ID1" == "None" ] || [ -z "$NGSG_ID1" ]; then
-        echo "❌ Error: ${NGSG_TAG_NAME1}의 SecurityGroup ID를 찾을 수 없습니다."
-        exit 1
+    if [ "$NGMGMTSG_ID1" == "None" ] || [ -z "$NGMGMTSG_ID1" ]; then
+        echo "${NGSG_TAG_NAME1} SecurityGroup 을 생성합니다."
+        NGMGMTSG_ID1=$(aws ec2 create-security-group \
+                        --group-name "$NGMGMTSG_TAG_NAME1" \
+                        --description "EKS Cluster Management Node Security Group for application" \
+                        --vpc-id "$VPC_ID" --query "GroupId" --output text)
+        if [ "$NGMGMTSG_ID1" == "None" ] || [ -z "$NGMGMTSG_ID1" ]; then
+            echo "${NGMGMTSG_TAG_NAME1} SecurityGroup 생성중 오류가 발생했습니다."
+            exit 1
+        fi
+        # sg 생성시 만들어 지는 default egress outbound rule 삭제
+        aws ec2 revoke-security-group-egress --group-id "$NGMGMTSG_ID1" --protocol all --port all --cidr 0.0.0.0/0 > /dev/null
+
+        # Tags 추가
+        SG_TAGS=(
+            "Key=project,Value=$PROJECT_NAME"
+            "Key=environment,Value=$ENVIRONMENT"
+            "Key=Name,Value=$NGMGMTSG_TAG_NAME1"
+        )
+        aws ec2 create-tags --resources "$NGMGMTSG_ID1" --tags "${SG_TAGS[@]}"
+    fi
+    # --------- <  인프라 관리용 ssh 접근 환경  > ---------------
+    NGMGMTSG_TAG_NAME2="sgrp-${PROJECT_NAME}-${ENVIRONMENT}-eks-cluster-${PROJECT_NAME}-${ENVIRONMENT}-ng-mgmt-for-infra"
+
+    NGMGMTSG_ID2=$(aws ec2 describe-security-groups \
+               --filters "Name=tag:Name,Values=${NGMGMTSG_TAG_NAME2}" \
+               --query "SecurityGroups[0].GroupId" \
+               --output text)
+
+    # 조회 결과가 없을 경우 예외 처리
+    if [ "$NGMGMTSG_ID2" == "None" ] || [ -z "$NGMGMTSG_ID2" ]; then
+        echo "${NGMGMTSG_TAG_NAME2} SecurityGroup 을 생성합니다."
+        NGMGMTSG_ID2=$(aws ec2 create-security-group \
+                        --group-name "$NGMGMTSG_TAG_NAME2" \
+                        --description "EKS Cluster Management Node Security Group for Infra" \
+                        --vpc-id "$VPC_ID" --query "GroupId" --output text)
+        if [ "$NGMGMTSG_ID2" == "None" ] || [ -z "$NGMGMTSG_ID2" ]; then
+            echo "${NGMGMTSG_TAG_NAME2} SecurityGroup 생성중 오류가 발생했습니다."
+            exit 1
+        fi
+        # sg 생성시 만들어 지는 default egress outbound rule 삭제
+        aws ec2 revoke-security-group-egress --group-id "$NGMGMTSG_ID2" --protocol all --port all --cidr 0.0.0.0/0 > /dev/null
+        # vpc 내의 cidr 범위내에서ssh access ingress rule 추가
+        aws ec2 authorize-security-group-ingress \
+         --group-id "$NGMGMTSG_ID2" \
+         --protocol tcp \
+         --port 22 \
+         --cidr $(aws ec2 describe-vpcs \
+                   --vpc-ids "$VPC_ID" \
+                   --query "Vpcs[0].CidrBlock" \
+                   --output text)
+
+        # Tags 추가
+        SG_TAGS=(
+            "Key=project,Value=$PROJECT_NAME"
+            "Key=environment,Value=$ENVIRONMENT"
+            "Key=Name,Value=$NGMGMTSG_TAG_NAME2"
+        )
+        aws ec2 create-tags --resources "$NGMGMTSG_ID2" --tags "${SG_TAGS[@]}"
     fi
 
 IFS= read -r -d '' NGSG_BLOCK <<EOF
-        - "$NGSG_ID1"
+        - "$NGMGMTSG_ID1"
+        - "$NGMGMTSG_ID2"
 EOF
 
     # 2. sed에서 사용할 수 있도록 줄바꿈 처리 (\n 추가)
@@ -308,21 +417,79 @@ EOF
 #############################################################################
 getNgWorkSgIDS()
 {
-
-    NGSG_TAG_NAME1="tb07297-eks-app-sg"  # test
-    NGSG_ID1=$(aws ec2 describe-security-groups \
-               --filters "Name=tag:Name,Values=${NGSG_TAG_NAME1}" \
+    # --------- <  application 용 접근 환경 > ---------------
+    NGWORKSG_TAG_NAME1="sgrp-${PROJECT_NAME}-${ENVIRONMENT}-eks-cluster-${PROJECT_NAME}-${ENVIRONMENT}-ng-worker-for-appl"
+    NGWORKSG_ID1=$(aws ec2 describe-security-groups \
+               --filters "Name=tag:Name,Values=${NGWORKSG_TAG_NAME1}" \
                --query "SecurityGroups[0].GroupId" \
                --output text)
 
     # 조회 결과가 없을 경우 예외 처리
-    if [ "$NGSG_ID1" == "None" ] || [ -z "$NGSG_ID1" ]; then
-        echo "❌ Error: ${NGSG_TAG_NAME1}의 SecurityGroup ID를 찾을 수 없습니다."
-        exit 1
+    if [ "$NGWORKSG_ID1" == "None" ] || [ -z "$NGWORKSG_ID1" ]; then
+        echo "${NGWORKSG_TAG_NAME1} SecurityGroup 을 생성합니다."
+        NGWORKSG_ID1=$(aws ec2 create-security-group \
+                        --group-name "$NGWORKSG_TAG_NAME1" \
+                        --description "EKS Cluster Control Plane apiserver access Extra Security Group" \
+                        --vpc-id "$VPC_ID" --query "GroupId" --output text)
+        if [ "$NGWORKSG_ID1" == "None" ] || [ -z "$NGWORKSG_ID1" ]; then
+            echo "${NGWORKSG_TAG_NAME1} SecurityGroup 생성중 오류가 발생했습니다."
+            exit 1
+        fi
+        # sg 생성시 만들어 지는 default egress outbound rule 삭제
+        aws ec2 revoke-security-group-egress --group-id "$NGWORKSG_ID1" --protocol all --port all --cidr 0.0.0.0/0 > /dev/null
+
+        # Tags 추가
+        SG_TAGS=(
+            "Key=project,Value=$PROJECT_NAME"
+            "Key=environment,Value=$ENVIRONMENT"
+            "Key=Name,Value=$NGWORKSG_TAG_NAME1"
+        )
+        aws ec2 create-tags --resources "$NGWORKSG_ID1" --tags "${SG_TAGS[@]}"
+    fi
+
+    # --------- <  인프라 관리용 ssh 접근 환경  > ---------------
+    NGWORKSG_TAG_NAME2="sgrp-${PROJECT_NAME}-${ENVIRONMENT}-eks-cluster-${PROJECT_NAME}-${ENVIRONMENT}-ng-worker-for-infra"
+
+    NGWORKSG_ID2=$(aws ec2 describe-security-groups \
+               --filters "Name=tag:Name,Values=${NGWORKSG_TAG_NAME2}" \
+               --query "SecurityGroups[0].GroupId" \
+               --output text)
+
+    # 조회 결과가 없을 경우 예외 처리
+    if [ "$NGWORKSG_ID2" == "None" ] || [ -z "$NGWORKSG_ID2" ]; then
+        echo "${NGWORKSG_TAG_NAME2} SecurityGroup 을 생성합니다."
+        NGWORKSG_ID2=$(aws ec2 create-security-group \
+                        --group-name "$NGWORKSG_TAG_NAME2" \
+                        --description "EKS Cluster Management Node Security Group for Infra" \
+                        --vpc-id "$VPC_ID" --query "GroupId" --output text)
+        if [ "$NGWORKSG_ID2" == "None" ] || [ -z "$NGWORKSG_ID2" ]; then
+            echo "${NGWORKSG_TAG_NAME2} SecurityGroup 생성중 오류가 발생했습니다."
+            exit 1
+        fi
+        # sg 생성시 만들어 지는 default egress outbound rule 삭제
+        aws ec2 revoke-security-group-egress --group-id "$NGWORKSG_ID2" --protocol all --port all --cidr 0.0.0.0/0 > /dev/null
+        # vpc 내의 cidr 범위내에서ssh access ingress rule 추가
+        aws ec2 authorize-security-group-ingress \
+         --group-id "$NGWORKSG_ID2" \
+         --protocol tcp \
+         --port 22 \
+         --cidr $(aws ec2 describe-vpcs \
+                   --vpc-ids "$VPC_ID" \
+                   --query "Vpcs[0].CidrBlock" \
+                   --output text)
+
+        # Tags 추가
+        SG_TAGS=(
+            "Key=project,Value=$PROJECT_NAME"
+            "Key=environment,Value=$ENVIRONMENT"
+            "Key=Name,Value=$NGWORKSG_TAG_NAME2"
+        )
+        aws ec2 create-tags --resources "$NGWORKSG_ID2" --tags "${SG_TAGS[@]}"
     fi
 
 IFS= read -r -d '' NGSG_BLOCK <<EOF
-        - "$NGSG_ID1"
+        - "$NGWORKSG_ID1"
+        - "$NGWORKSG_ID2"
 EOF
 
     # 2. sed에서 사용할 수 있도록 줄바꿈 처리 (\n 추가)
@@ -334,7 +501,7 @@ EOF
 
 #############################################################################
 ## Function Name : getNgMgmtTaints
-## Description : EKS Cluster의 Managment Node Group Taints
+## Description : Worker Nodegroup의 Node용 Application SG 생성(업무팀에게 관리 제공)
 ## Information :
 #############################################################################
 getNgMgmtTaints()
@@ -376,17 +543,23 @@ EOF
 # =========<<<< Function Registration Area Marking Comment (end) >>>>==================================
 
 # =========<<<< Main Logic Coding Area Marking Comment (start) >>>>====================================
-jobProcess "start"  # monitoring - start
 
 # 변수 할당
 PROJECT_NAME=$1  # 프로젝트 이름
 ENVIRONMENT=$2   # 환경구분
+TEMPLATE_FILE=$3  # template 파일
+OUTPUT_FILE=$4  # 변수 치환된 파일
 
-if [ -z "$PROJECT_NAME" -o -z "$ENVIRONMENT" ]; then
-    echo "Usage: ./render1.sh <project_name> <environment>"
-    echo "Example: ./render1.sh tb07297 dev"
+if [ -z "$PROJECT_NAME" -o -z "$ENVIRONMENT" -o -z "$TEMPLATE_FILE" -o -z "$OUTPUT_FILE" ]; then
+    echo "Usage: ./3-1.render_eksctl_nodegroup_config.sh <project_name> <environment> <template_filename> <output_filename>"
+    echo "Example: ./3-1.render_eksctl_nodegroup_config.sh hellow dev eksctl_nodegroup_conf.yaml hellow-dev-eksctl_nodegroup_conf.yaml "
     exit 1
 fi
+
+printf "\n#########################\n"
+printf "\n-<< ./3-1.render_eksctl_nodegroup_config.sh  $PROJECT_NAME $ENVIRONMENT $TEMPLATE_FILE $OUTPUT_FILE >>--\n"
+printf "\n#########################\n"
+jobProcess "start"  # monitoring - start
 
 printf "\n-------------------------\n"
 echo "1. getAccountID"
@@ -394,7 +567,13 @@ getAccountID
 jobProcess "checking"   # monitoring - checking
 
 printf "\n-------------------------\n"
-echo "2. get Management Node Group "
+echo "2. getVpcID"
+getVpcID
+jobProcess "checking"   # monitoring - checking
+
+printf "\n-------------------------\n"
+echo "3. get Management Node Group "
+getNgMgmtName
 getNgMgmtSubnets
 getNgMgmtLabels
 getNgMgmtTags
@@ -403,24 +582,24 @@ getNgMgmtTaints
 jobProcess "checking"   # monitoring - checking
 
 printf "\n-------------------------\n"
-echo "3. get Worker Node Group "
+echo "4. get Worker Node Group "
+getNgWorkName
 getNgWorkSubnets
 getNgWorkLabels
 getNgWorkTags
 getNgWorkSgIDS
 getNgWorkTaints
 
-TEMPLATE_FILE="eksctl_nodegroup_conf.yaml"  # template 파일
-OUTPUT_FILE="${PROJECT_NAME}-${ENVIRONMENT}-${TEMPLATE_FILE}"  # 변수 치환된 파일
-
 sed -e "s/<account_id>/${ACCOUNT_ID}/g" \
     -e "s/<project_name>/${PROJECT_NAME}/g" \
     -e "s/<environment>/${ENVIRONMENT}/g" \
+    -e "s|<mgmt_node_name>|${EKS_NG_MGMT_NAME}|g" \
     -e "s|<mgmt_node_subnets>|${EKS_NG_MGMT_SUBNETS}|g" \
     -e "s|<mgmt_node_labels>|${EKS_NG_MGMT_LABELS}|g" \
     -e "s|<mgmt_node_tags>|${EKS_NG_MGMT_TAGS}|g" \
     -e "s|<mgmt_node_sg_ids>|${EKS_NG_MGMT_SG_IDS}|g" \
     -e "s|<mgmt_node_taints>|${EKS_NG_MGMT_TAINTS}|g" \
+    -e "s|<worker_node_name>|${EKS_NG_WOLRK_NAME}|g" \
     -e "s|<worker_node_subnets>|${EKS_NG_WORK_SUBNETS}|g" \
     -e "s|<worker_node_labels>|${EKS_NG_WORK_LABELS}|g" \
     -e "s|<worker_node_tags>|${EKS_NG_WORK_TAGS}|g" \
