@@ -1,7 +1,7 @@
 #!/bin/bash
 #######################################################################################################
-### File Name : 3-1.eksctl-create-cluster.sh
-### Description : Install eks cluster with eksctl 
+### File Name : 3-2.eksctl-create-nodegroup.sh
+### Description : Install eks cluster nodegroup with eksctl 
 ### Information :
 ###====================================================================================================
 ### version       date        author        reason
@@ -25,32 +25,28 @@ logdatefmt="%Y%m%d-%H:%M:%S" # date/time format variable for logging info:used i
 # =========<<<< Function Registration Area Marking Comment (end) >>>>==================================
 
 # =========<<<< Main Logic Coding Area Marking Comment (start) >>>>====================================
-PROJECT_NAME="tb07297"                    # Project Name  정보 - 필수 항목
-ENVIRONMENT="dev"                         # Environment 정보 - 필수 항목 
-TEMPLATE_FILE="eksctl_cluster_conf.yaml"  # template 파일  - 필수 항목
+PROJECT_NAME="tb07297"                      # Project Name  정보 - 필수 항목
+ENVIRONMENT="dev"                           # Environment 정보 - 필수 항목 
+TEMPLATE_FILE="eksctl_nodegroup_conf.yaml"  # template 파일 - 필수 항목
 OUTPUT_FILE="${PROJECT_NAME}-${ENVIRONMENT}-${TEMPLATE_FILE}"  # 변수 치환된 파일
 
-# eks cluster control plane, nodegroup 및 addon role 생성하기
-./3-1-1.ekscluster-addon-role.sh  $PROJECT_NAME  $ENVIRONMENT
-
-# template의 값을 치환하여 eksctl cluster config 파일 생성하기
-./3-1-2.render_eksctl_cluster_config.sh  $PROJECT_NAME  $ENVIRONMENT $TEMPLATE_FILE $OUTPUT_FILE
+# template의 값을 치환하여 eksctl nodegroup config 파일 생성하기
+./3-2-0.render_eksctl_nodegroup_config.sh  $PROJECT_NAME  $ENVIRONMENT $TEMPLATE_FILE $OUTPUT_FILE
 
 if [ $# -ge 1 ]; then
     if [ $1 == "dry" ]; then
-        echo "eksctl create cluster -f ${OUTPUT_FILE} --dry-run"
-        eksctl create cluster -f ${OUTPUT_FILE}  --dry-run
+        echo "eksctl create nodegroup -f ${OUTPUT_FILE} --dry-run"
+        eksctl create nodegroup -f ${OUTPUT_FILE}  --dry-run
     elif [ $1 == "up" ]; then
-        echo "eksctl upgrade cluster -f ${OUTPUT_FILE} --approve"
-        eksctl upgrade cluster -f ${OUTPUT_FILE} --approve
+        echo "eksctl upgrade nodegroup -f ${OUTPUT_FILE} --approve"
+        eksctl upgrade nodegroup -f ${OUTPUT_FILE} --approve
     fi
 else
-    eksctl create cluster -f ${OUTPUT_FILE}
+    eksctl create nodegroup -f ${OUTPUT_FILE}
 
-    #eksctl get cluster -r ap-northeast-2
+    #eksctl get nodegroup -r ap-northeast-2
 
     echo "kubectl label nodes -l eks.amazonaws.com/nodegroup=management node-role.kubernetes.io/management=1"
     echo "kubectl label nodes -l eks.amazonaws.com/nodegroup=worker node-role.kubernetes.io/worker=1"
 fi
 # =========<<<< Main Logic Coding Area Marking Comment (end) >>>>======================================
-

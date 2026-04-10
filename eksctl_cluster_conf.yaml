@@ -80,44 +80,94 @@ vpc:
 addons:
   - name: eks-pod-identity-agent # 제일 처음 설치를 해야 pod identity 처리됨
     version: latest      # 특정 버전을 지정하거나 최신 버전 사용
+    tags:
+      component: "Security"
+      service: "Pod-Identity-Agent"
+      Name: eks-pod-identity-agent
   - name: vpc-cni        # 기본 필수 애드온
     version: latest
     resolveConflicts: overwrite
+    tags:
+      component: "Networking"
+      service: "VPC-CNI"
+      Name: vpc-cni
     podIdentityAssociations:
       - namespace: kube-system
         serviceAccountName: aws-node
         roleARN: arn:aws:iam::<account_id>:role/role-<project_name>-<environment>-eks-addon-vpc-cni
+        tags:
+          rolename: role-<project_name>-<environment>-eks-addon-vpc-cni
   - name: kube-proxy     # 기본 필수 애드온
     version: latest
+    tags:
+      component: "Networking"
+      service: "Kube-Proxy"
+      Name: kube-proxy
   - name: coredns        # 기본 필수 애드온
     version: latest
+    tags:
+      component: "Networking"
+      service: "CoreDNS"
+      Name: coredns
+    podIdentityAssociations:
+      - namespace: kube-system
+        serviceAccountName: coredns
+        roleARN: arn:aws:iam::<account_id>:role/role-<project_name>-<environment>-eks-addon-coredns
+        tags:
+          rolename: role-<project_name>-<environment>-eks-addon-coredns
   - name: metrics-server # [추가] Metrics Server 활성화
     version: latest      # 특정 버전을 지정하거나 최신 버전 사용
     resolveConflicts: overwrite  # [중요] 기존 설정과 충돌 시 덮어쓰기 설정
+    tags:
+      component: "Monitoring"
+      service: "Metrics-Server"
+      Name: metrics-server
   - name: aws-ebs-csi-driver # [추가] Amazon EBS CSI Driver: 블록 스토리지 연동
     version: latest      # 특정 버전을 지정하거나 최신 버전 사용
     resolveConflicts: overwrite
+    tags:
+      component: "Storage"
+      service: "EBS-CSI"
+      Name: aws-ebs-csi-driver
     podIdentityAssociations:
       - namespace: kube-system
         serviceAccountName: ebs-csi-controller-sa
         roleARN: arn:aws:iam::<account_id>:role/role-<project_name>-<environment>-eks-addon-ebs-csi
+        tags:
+          rolename: role-<project_name>-<environment>-eks-addon-ebs-csi
   - name: aws-efs-csi-driver # [추가] Amazon EFS CSI Driver: 블록 스토리지 연동
     version: latest      # 특정 버전을 지정하거나 최신 버전 사용
     resolveConflicts: overwrite
+    tags:
+      component: "Storage"
+      service: "EFS-CSI"
+      Name: aws-efs-csi-driver
     podIdentityAssociations:
       - namespace: kube-system
         serviceAccountName: efs-csi-controller-sa
         roleARN: arn:aws:iam::<account_id>:role/role-<project_name>-<environment>-eks-addon-efs-csi
+        tags:
+          rolename: role-<project_name>-<environment>-eks-addon-efs-csi
   - name: aws-mountpoint-s3-csi-driver # [추가] Amazon Mountpoint for S3 CSI Driver: S3를 파일 시스템처럼 마운트
     version: latest      # 특정 버전을 지정하거나 최신 버전 사용
     resolveConflicts: overwrite
+    tags:
+      component: "Storage"
+      service: "S3-CSI"
+      Name: aws-mountpoint-s3-csi-driver
     podIdentityAssociations:
       - namespace: kube-system
         serviceAccountName: s3-csi-driver-sa
         roleARN: arn:aws:iam::<account_id>:role/role-<project_name>-<environment>-eks-addon-s3-csi
+        tags:
+          rolename: role-<project_name>-<environment>-eks-addon-s3-csi
   - name: snapshot-controller # [추가] Snapshot Controller: 데이터 백업 및 복구 관리
     version: latest      # 특정 버전을 지정하거나 최신 버전 사용
     resolveConflicts: overwrite
+    tags:
+      component: "Storage-Management"
+      service: "Snapshot-Controller"
+      Name: snapshot-controller
 addonsConfig:
   # specifies whether to automatically apply pod identity associations for supported addons that require IAM permissions.
   autoApplyPodIdentityAssociations: false

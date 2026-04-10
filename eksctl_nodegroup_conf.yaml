@@ -29,7 +29,7 @@ managedNodeGroups:
     tags:
 <mgmt_node_tags>
     iam:
-      instanceRoleARN: "arn:aws:iam::<account_id>:role/role-<project_name>-<environment>-eks-nodegroup-role"  # EKS Cluster Node Group Role
+      instanceRoleARN: "arn:aws:iam::<account_id>:role/role-<project_name>-<environment>-eks-nodegroup"  # EKS Cluster Node Group Role
     securityGroups:
       attachIDs:
 <mgmt_node_sg_ids>
@@ -55,11 +55,11 @@ managedNodeGroups:
     tags:
 <worker_node_tags>
     iam:
-      instanceRoleARN: "arn:aws:iam::<account_id>:role/role-<project_name>-<environment>-eks-nodegroup-role"  # EKS Cluster Node Group Role
+      instanceRoleARN: "arn:aws:iam::<account_id>:role/role-<project_name>-<environment>-eks-nodegroup"  # EKS Cluster Node Group Role
     securityGroups:
       attachIDs:
 <worker_node_sg_ids>
-                       # node에서 application 관리용Security Group
+                      # node에서 application 관리용Security Group
     volumeType: gp3
     disableIMDSv1: true       # IMDSv2 강제 적용
     taints:

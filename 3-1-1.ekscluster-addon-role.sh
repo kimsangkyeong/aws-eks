@@ -1,7 +1,7 @@
 #!/bin/bash
 #######################################################################################################
 ### File Name : 3-1-1.ekscluster-addon-role.sh
-### Description : role of ekscluster and nodegroup
+### Description : role of ekscluster control plane and nodegroup, addon
 ### Information : eksctl schema  정보
 ###               https://schema.eksctl.io/
 ###====================================================================================================
@@ -9,6 +9,7 @@
 ###----------------------------------------------------------------------------------------------------
 ###    1.0     2026.03.30      ksk         First Version.
 ###    1.1     2026.04.08      ksk         create eks addon roles
+###    1.2     2026.04.10      ksk         create eks control plane & nodegroup roles
 #######################################################################################################
 # =========<<<< Signal command processing login (start) >>>>===========================================
 trap 'echo "$(date +${logdatefmt}) $0 signal(SIGINT) captured" | tee -a ${logfnm}; exit 1;' SIGINT
@@ -36,6 +37,7 @@ TRUST_POLICY_DOC=""
 INLINE_POLICY_NAME=""
 INLINE_POLICY_DOC=""
 MANAGED_POLICIES=("")
+ROLE_TAGS=("")
 
 # =========<<<< Important Global Variable Registration Area Marking Comment (end) >>>>=================
 
@@ -99,6 +101,11 @@ createRole()
     # --query 'Role.Arn' 은 성공 시 ARN을 반환하며, 실패 시 에러 코드를 냅니다.
     if aws iam get-role --role-name "$ROLE_NAME" > /dev/null 2>&1; then
         echo "[SKIP] IAM Role '$ROLE_NAME' 이 이미 존재합니다."
+        echo " IAM Role Tag 정보 Update"
+        # 이미 존재할 경우 태그 업데이트 (Idempotency 보장)
+        aws iam tag-role \
+            --role-name "$ROLE_NAME" \
+            --tags "${ROLE_TAGS[@]}"
     else
         echo "[CREATE] IAM Role '$ROLE_NAME' 을 생성합니다."
         echo "TRUST_POLICY_DOC"
@@ -106,6 +113,7 @@ createRole()
         aws iam create-role \
             --role-name "$ROLE_NAME" \
             --assume-role-policy-document "$TRUST_POLICY_DOC"
+            --tags "${ROLE_TAGS[@]}"
     fi
 
     # 2. 정책 적용 (Policy는 존재하더라도 덮어쓰기(Overwrite)가 가능하므로 매번 실행하는 것이 안전합니다)
@@ -128,6 +136,122 @@ createRole()
         echo "[$policy_arn] AWS Managed Policy 설정을 동기화합니다..."
         aws iam attach-role-policy --role-name "$ROLE_NAME" --policy-arn "$policy_arn"
     done
+
+}
+
+#############################################################################
+## Function Name : createRoleForEKSControlPlane
+## Description : EKS Cluster Control Plane을 위한 Role 생성하기
+## Information : EKS Cluster 리소스 생성권한 생성
+#############################################################################
+createRoleForEKSControlPlane()
+{
+
+    # 1. 설정
+    ROLE_NAME="role-${PROJECT_NAME}-${ENVIRONMENT}-eks-cluster"
+
+    # 2. Trust Relationship (Heredoc)
+    TRUST_POLICY_DOC=$(cat <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "eks.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+        }
+    ]
+}
+EOF
+)
+    # 3. Inline Policy (Heredoc) - custom policy
+    INLINE_POLICY_NAME="none"
+    INLINE_POLICY_DOC=$(cat <<EOF
+                        none
+EOF
+)
+
+    # 4. Managed Policy 리스트
+    MANAGED_POLICIES=(
+        "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
+    )
+
+    # 5. Role Tags
+    ROLE_TAGS=(
+        "Key=Name,Value=${ROLE_NAME}"
+        "Key=project,Value=${PROJECT_NAME}"
+        "Key=environment,Value=${ENVIRONMENT}"
+    )
+
+    # 6. create role
+    createRole
+
+}
+
+#############################################################################
+## Function Name : createRoleForEKSNodegroup
+## Description : EKS Cluster Nodegroup을 위한 Role 생성하기
+## Information : EKS Nodegroup의CNI 관리, EC2, ECR 조회 등 권한 부여
+#############################################################################
+createRoleForEKSNodegroup()
+{
+
+    # 1. 설정
+    ROLE_NAME="role-${PROJECT_NAME}-${ENVIRONMENT}-eks-nodegroup"
+
+    # 2. Trust Relationship (Heredoc)
+    TRUST_POLICY_DOC=$(cat <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "ec2.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+        }
+    ]
+}
+EOF
+)
+    # 3. Inline Policy (Heredoc) - custom policy
+    INLINE_POLICY_NAME="none"
+    INLINE_POLICY_DOC=$(cat <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowPodIdentityAgent",
+            "Effect": "Allow",
+            "Action": [
+                "eks-auth:AssumeRoleForPodIdentity"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+EOF
+)
+
+    # 4. Managed Policy 리스트
+    MANAGED_POLICIES=(
+        "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+        "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
+        "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
+    )
+
+    # 5. Role Tags
+    ROLE_TAGS=(
+        "Key=Name,Value=${ROLE_NAME}"
+        "Key=project,Value=${PROJECT_NAME}"
+        "Key=environment,Value=${ENVIRONMENT}"
+    )
+
+    # 6. create role
+    createRole
 
 }
 
@@ -173,7 +297,14 @@ EOF
         "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
     )
 
-    # 5. create role
+    # 5. Role Tags
+    ROLE_TAGS=(
+        "Key=Name,Value=${ROLE_NAME}"
+        "Key=project,Value=${PROJECT_NAME}"
+        "Key=environment,Value=${ENVIRONMENT}"
+    )
+
+    # 6. create role
     createRole
 
 }
@@ -258,7 +389,14 @@ EOF
     MANAGED_POLICIES=(
     )
 
-    # 5. create role
+    # 5. Role Tags
+    ROLE_TAGS=(
+        "Key=Name,Value=${ROLE_NAME}"
+        "Key=project,Value=${PROJECT_NAME}"
+        "Key=environment,Value=${ENVIRONMENT}"
+    )
+
+    # 6. create role
     createRole
 
 }
@@ -341,7 +479,14 @@ EOF
     MANAGED_POLICIES=(
     )
 
-    # 5. create role
+    # 5. Role Tags
+    ROLE_TAGS=(
+        "Key=Name,Value=${ROLE_NAME}"
+        "Key=project,Value=${PROJECT_NAME}"
+        "Key=environment,Value=${ENVIRONMENT}"
+    )
+
+    # 6. create role
     createRole
 
 }
@@ -409,7 +554,68 @@ EOF
     MANAGED_POLICIES=(
     )
 
-    # 5. create role
+    # 5. Role Tags
+    ROLE_TAGS=(
+        "Key=Name,Value=${ROLE_NAME}"
+        "Key=project,Value=${PROJECT_NAME}"
+        "Key=environment,Value=${ENVIRONMENT}"
+    )
+
+    # 6. create role
+    createRole
+
+}
+
+#############################################################################
+## Function Name : createRoleForCoreDNS
+## Description : EKS Cluster Addon CoreDNS를 위한 Role 생성하기
+## Information : Pod Identity 방식으로 IRSA 처리목적
+#############################################################################
+createRoleForCoreDNS()
+{
+
+    # 1. 설정
+    ROLE_NAME="role-${PROJECT_NAME}-${ENVIRONMENT}-eks-addon-coredns"
+
+    # 2. Trust Relationship (Heredoc)
+    TRUST_POLICY_DOC=$(cat <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "pods.eks.amazonaws.com"
+            },
+            "Action": [
+                "sts:AssumeRole",
+                "sts:TagSession"
+            ]
+        }
+    ]
+}
+EOF
+)
+    # 3. Inline Policy (Heredoc) - custom policy
+    INLINE_POLICY_NAME="none"
+    INLINE_POLICY_DOC=$(cat <<EOF
+                        none
+EOF
+)
+
+    # 4. Managed Policy 리스트
+    MANAGED_POLICIES=(
+        "arn:aws:iam::aws:policy/AmazonEKSCoreDNSController"
+    )
+
+    # 5. Role Tags
+    ROLE_TAGS=(
+        "Key=Name,Value=${ROLE_NAME}"
+        "Key=project,Value=${PROJECT_NAME}"
+        "Key=environment,Value=${ENVIRONMENT}"
+    )
+
+    # 6. create role
     createRole
 
 }
@@ -428,23 +634,42 @@ if [ -z "$PROJECT_NAME" -o -z "$ENVIRONMENT" ]; then
     exit 1
 fi
 
+###  << 이하EKS Cluster Control Plane & Nodegroup Role 생성>> ###
 printf "\n-------------------------\n"
-echo "1. eksctl 환경파일 작성에 필요한 EKS Cluster addon VPC CNI Driver Role 생성 하기"
+echo "cluter-1. eksctl 환경파일 작성에 필요한 EKS Cluster Control Plane Role 생성 하기"
+createRoleForEKSControlPlane
+jobProcess "checking"   # monitoring - checking
+
+printf "\n-------------------------\n"
+echo "cluter-2. eksctl 환경파일 작성에 필요한 EKS Cluster Nodegroup Role 생성 하기"
+createRoleForEKSNodegroup
+jobProcess "checking"   # monitoring - checking
+
+###  << 이하EKS Cluster Addon 서비스 Role 생성>> ###
+printf "\n-------------------------\n"
+echo "addon-1. eksctl 환경파일 작성에 필요한 EKS Cluster addon VPC CNI Driver Role 생성 하기"
 createRoleForVPCCNIDriver
 jobProcess "checking"   # monitoring - checking
 
 printf "\n-------------------------\n"
-echo "2. eksctl 환경파일 작성에 필요한 EKS Cluster addon EBS CSI Driver Role 생성 하기"
+echo "addon-2. eksctl 환경파일 작성에 필요한 EKS Cluster addon EBS CSI Driver Role 생성 하기"
 createRoleForEBSCSIDriver
 jobProcess "checking"   # monitoring - checking
 
 printf "\n-------------------------\n"
-echo "3. eksctl 환경파일 작성에 필요한 EKS Cluster addon EFS CSI Driver Role 생성 하기"
+echo "addon-3. eksctl 환경파일 작성에 필요한 EKS Cluster addon EFS CSI Driver Role 생성 하기"
 createRoleForEFSCSIDriver
 jobProcess "checking"   # monitoring - checking
 
 printf "\n-------------------------\n"
-echo "4. eksctl 환경파일 작성에 필요한 EKS Cluster addon S3 CSI Driver Role 생성 하기"
+echo "addon-4. eksctl 환경파일 작성에 필요한 EKS Cluster addon S3 CSI Driver Role 생성 하기"
 createRoleForS3CSIDriver
+jobProcess "checking"   # monitoring - checking
+
+printf "\n-------------------------\n"
+echo "addon-5. eksctl 환경파일 작성에 필요한 EKS Cluster addon CoreDNS Role 생성 하기"
+createRoleForCoreDNS
 
 jobProcess "end"   # monitoring - end
+
+# =========<<<< Main Logic Coding Area Marking Comment (end) >>>>======================================
