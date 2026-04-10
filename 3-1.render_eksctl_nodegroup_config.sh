@@ -306,7 +306,6 @@ getVpcID()
 {
 
     VPC_TAG_NAME="vpc-${PROJECT_NAME}-${ENVIRONMENT}"
-    VPC_TAG_NAME="tb07297-vpc"  # test
     VPC_ID=$(aws ec2 describe-vpcs \
               --filters "Name=tag:Name,Values=${VPC_TAG_NAME}" \
               --query "Vpcs[0].VpcId" \

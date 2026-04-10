@@ -47,5 +47,24 @@ else
     kubectl label nodes -l role=management node-role.kubernetes.io/management=1
     kubectl label nodes -l role=worker node-role.kubernetes.io/worker=1
 
+    kubectl get nodes
 fi
+
+# eksctl이 자동 생성하는 security group의 outbound any ip, any port 삭제하기 - 보안강화
+EKSCTL_GEN_SGS=(
+         $(aws ec2 describe-security-groups    \
+            --filters "Name=group-name,Values=eks*eks-cluster-${PROJECT_NAME}-${ENVIRONMENT}-*" \
+                      "Name=vpc-id,Values=$(aws ec2 describe-vpcs \
+                                             --filters "Name=tag:Name,Values=vpc-${PROJECT_NAME}-${ENVIRONMENT}" \
+                                             --query "Vpcs[0].VpcId" \
+                                             --output text)" \
+             --query "SecurityGroups[*].GroupId" \
+             --output text)
+)
+for eksctl_gen_sg in "${EKSCTL_GEN_SGS[@]}"; do
+    echo " eksctl에서 자동 생성한 Security Group [$eksctl_gen_sg] egress any ip, all port 삭제 하기"
+    aws ec2 revoke-security-group-egress \
+     --group-id "$eksctl_gen_sg" --protocol all --port all --cidr 0.0.0.0/0 > /dev/null
+done
+
 # =========<<<< Main Logic Coding Area Marking Comment (end) >>>>======================================
