@@ -137,6 +137,7 @@ EOF
                 "iam:AttachRolePolicy",
                 "iam:ListAttachedRolePolicies",
                 "iam:DetachRolePolicy",
+                "iam:CreatePolicy",
                 "iam:PutRolePolicy",
                 "iam:DeleteRolePolicy",
                 "iam:GetRolePolicy",
