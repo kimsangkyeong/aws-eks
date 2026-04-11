@@ -355,30 +355,9 @@ EOF
                 "ec2:ModifyVolume",
                 "ec2:CreateVolume",
                 "ec2:DeleteVolume",
-                "ec2:DescribeAvailabilityZones",
-                "ec2:DescribeInstances",
-                "ec2:DescribeSnapshots",
-                "ec2:DescribeTags",
-                "ec2:DescribeVolumes",
-                "ec2:DescribeVolumesModifications"
+                "ec2:DescribeVolumeStatus"
             ],
             "Resource": "*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": "ec2:CreateTags",
-            "Resource": [
-                "arn:aws:ec2:*:*:volume/*",
-                "arn:aws:ec2:*:*:snapshot/*"
-            ],
-            "Condition": {
-                "StringEquals": {
-                    "ec2:CreateAction": [
-                        "CreateVolume",
-                        "CreateSnapshot"
-                    ]
-                }
-            }
         }
     ]
 }
@@ -387,6 +366,7 @@ EOF
 
     # 4. Managed Policy 리스트
     MANAGED_POLICIES=(
+        "arn:aws:iam::aws:policy/AmazonEBSCSIDriverPolicy"
     )
 
     # 5. Role Tags

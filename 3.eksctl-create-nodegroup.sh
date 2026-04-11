@@ -51,6 +51,7 @@ else
 fi
 
 # eksctl이 자동 생성하는 security group의 outbound any ip, any port 삭제하기 - 보안강화
+echo "eksctl이 자동 생성하는 security group의 outbound any ip, any port 삭제하기 - 보안강화"
 EKSCTL_GEN_SGS=(
          $(aws ec2 describe-security-groups    \
             --filters "Name=group-name,Values=eks*eks-cluster-${PROJECT_NAME}-${ENVIRONMENT}-*" \

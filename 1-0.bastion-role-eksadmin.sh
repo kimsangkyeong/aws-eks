@@ -175,6 +175,7 @@ EOF
                     "iam:PassedToService": [
                         "eks.amazonaws.com",
                         "ec2.amazonaws.com",
+                        "eks-addons.amazonaws.com",
                         "pods.eks.amazonaws.com"
                     ]
                 }
@@ -193,7 +194,6 @@ EOF
                 "ec2:CreateRoute",
                 "ec2:AssociateRouteTable",
                 "ec2:CreateSecurityGroup",
-                "ec2:DeleteSecurityGroup",
                 "ec2:AuthorizeSecurityGroupIngress",
                 "ec2:AuthorizeSecurityGroupEgress",
                 "ec2:RevokeSecurityGroupEgress",
@@ -257,12 +257,12 @@ jobProcess "start"  # monitoring - start
 
 printf "\n-------------------------\n"
 echo "1. Bastion 서버의 Role에 필요한 정책 설정하기"
-echo "   ==> Bastion Server custom policy name example : policy-xxxxx-bastion "
+echo "   ==> Bastion Server custom policy name example : policy-<project_name>-<environment>-bastion "
 getPolicyOfBastionRoleForEKSAdmin
 
 printf "\n-------------------------\n"
 echo "2. Bastion Role Trust Relationship 설정하기"
-echo "   ==> Bastion Server Role name example : role-xxxxx-bastion "
+echo "   ==> Bastion Server Role name example : role-<project_name>-<environment>-bastion "
 getBastionRoleForEKSAdmin
 
 jobProcess "end"   # monitoring - end
