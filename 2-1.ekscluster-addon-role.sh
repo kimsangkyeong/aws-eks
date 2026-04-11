@@ -366,7 +366,7 @@ EOF
 
     # 4. Managed Policy 리스트
     MANAGED_POLICIES=(
-        "arn:aws:iam::aws:policy/AmazonEBSCSIDriverPolicy"
+        "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
     )
 
     # 5. Role Tags
