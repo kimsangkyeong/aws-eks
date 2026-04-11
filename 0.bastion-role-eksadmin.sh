@@ -1,12 +1,13 @@
 #!/bin/bash
 #######################################################################################################
-### File Name : 1-0.bastion-role-eksadmin.sh
+### File Name : 0.bastion-role-eksadmin.sh
 ### Description : role of Bastion Server for eksadmin
 ### Information :
 ###====================================================================================================
 ### version       date        author        reason
 ###----------------------------------------------------------------------------------------------------
 ###    1.0     2026.03.29      ksk         First Version.
+###    1.1     2026.04.12      ksk         rename filename and modify policy
 #######################################################################################################
 # =========<<<< Signal command processing login (start) >>>>===========================================
 trap 'echo "$(date +${logdatefmt}) $0 signal(SIGINT) captured" | tee -a ${logfnm}; exit 1;' SIGINT
@@ -257,12 +258,12 @@ jobProcess "start"  # monitoring - start
 
 printf "\n-------------------------\n"
 echo "1. Bastion 서버의 Role에 필요한 정책 설정하기"
-echo "   ==> Bastion Server custom policy name example : policy-<project_name>-<environment>-bastion "
+echo "   ==> Bastion Server custom policy name example : policy-<project_name>-<environment>-bastion-bastion-eksadmin"
 getPolicyOfBastionRoleForEKSAdmin
 
 printf "\n-------------------------\n"
 echo "2. Bastion Role Trust Relationship 설정하기"
-echo "   ==> Bastion Server Role name example : role-<project_name>-<environment>-bastion "
+echo "   ==> Bastion Server Role name example : role-<project_name>-<environment>--bastion-eksadmin"
 getBastionRoleForEKSAdmin
 
 jobProcess "end"   # monitoring - end
