@@ -101,7 +101,7 @@ getAccountID()
 jobProcess "start"  # monitoring - start
 
 # Helm utils 설치용 shell script Home directory 정보 설정
-SCRIPT_HOME_PATH="./4.helm-utils-homedir"
+SCRIPT_HOME_PATH="${PWD}/4.helm-utils-homedir"
 
 # 1. aws-loadbalancer-controller 도구 설치 및 환경설정
 PROJECT_NAME="tb07297"                      # Project Name  정보

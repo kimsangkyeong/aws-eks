@@ -31,21 +31,21 @@ TEMPLATE_FILE="eksctl_nodegroup_conf.yaml"  # template 파일 - 필수 항목
 OUTPUT_FILE="${PROJECT_NAME}-${ENVIRONMENT}-${TEMPLATE_FILE}"  # 변수 치환된 파일
 
 # EKS Cluster Data Plane 서버 설치용 shell script Home directory 정보 설정
-SCRIPT_HOME_PATH="./3.eksctl-dataplane-homedir"
+SCRIPT_HOME_PATH="${PWD}/3.eksctl-dataplane-homedir"
 
 # template의 값을 치환하여 eksctl nodegroup config 파일 생성하기
 ${SCRIPT_HOME_PATH}/3-1.render_eksctl_nodegroup_config.sh  $PROJECT_NAME  $ENVIRONMENT ${SCRIPT_HOME_PATH}/$TEMPLATE_FILE ${SCRIPT_HOME_PATH}/$OUTPUT_FILE
 
 if [ $# -ge 1 ]; then
     if [ $1 == "dry" ]; then
-        echo "eksctl create nodegroup -f ${OUTPUT_FILE} --dry-run"
-        eksctl create nodegroup -f ${OUTPUT_FILE}  --dry-run
+        echo "eksctl create nodegroup -f  ${SCRIPT_HOME_PATH}/${OUTPUT_FILE} --dry-run"
+        eksctl create nodegroup -f  ${SCRIPT_HOME_PATH}/${OUTPUT_FILE}  --dry-run
     elif [ $1 == "up" ]; then
-        echo "eksctl upgrade nodegroup -f ${OUTPUT_FILE} --approve"
-        eksctl upgrade nodegroup -f ${OUTPUT_FILE} --approve
+        echo "eksctl upgrade nodegroup -f  ${SCRIPT_HOME_PATH}/${OUTPUT_FILE} --approve"
+        eksctl upgrade nodegroup -f  ${SCRIPT_HOME_PATH}/${OUTPUT_FILE} --approve
     fi
 else
-    eksctl create nodegroup -f ${OUTPUT_FILE}
+    eksctl create nodegroup -f  ${SCRIPT_HOME_PATH}/${OUTPUT_FILE}
 
     kubectl label nodes -l role=management node-role.kubernetes.io/management=1
     kubectl label nodes -l role=worker node-role.kubernetes.io/worker=1

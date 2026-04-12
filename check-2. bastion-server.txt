@@ -1,212 +1,43 @@
-# 0. ec2 생성
-#    0-1. keypair 생성
-#    0-2. sg 생성
-#    0-3. eip 생성 option
-#    0-4. ec2 생성 (default user: ec2-user )
-#         0-4-1. ec2용 iam role 생성 (https://docs.aws.amazon.com/ko_kr/eks/latest/userguide/security-iam-id-based-policy-examples.html)
-#                - role:  ec2-bastion-role
-#                - custom policy:  - createrole/deleterole/getpolicy/...
+###############################################################
+## Step1. Bastion 서버 설정하기
+###############################################################
 
-                  - managed : AmazonEKSClusterPolicy
-=========< custom policy >====
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Sid": "VisualEditor0",
-            "Effect": "Allow",
-            "Action": [
-                "iam:GetRole",
-                "iam:UntagRole",
-                "iam:GetPolicy",
-                "iam:TagRole",
-                "iam:DeletePolicy",
-                "iam:CreateRole",
-                "iam:DeleteRole",
-                "iam:AttachRolePolicy",
-                "iam:PutRolePolicy",
-                "iam:TagPolicy",
-                "iam:CreatePolicy",
-                "iam:DetachRolePolicy",
-                "iam:ListAttachedRolePolicies",
-                "iam:DeleteRolePolicy",
-                "iam:UntagPolicy",
-                "iam:ListRolePolicies"
-            ],
-            "Resource": [
-                "arn:aws:iam::XXXXXXXXXXXX:role/*",
-                "arn:aws:iam::XXXXXXXXXXXX:policy/*"
-            ]
-        },
-        {
-            "Sid": "VisualEditor1",
-            "Effect": "Allow",
-            "Action": [
-                "iam:ListPolicies",
-                "iam:ListRoles",
-                "cloudformation:*",
-                "ec2:*",
-                "eks:*",
-            ],
-            "Resource": "*"
-        },
-        {
-            "Sid": "VisualEditor2",
-            "Effect": "Allow",
-            "Action": "iam:PassRole",
-            "Resource": [
-                "arn:aws:iam::XXXXXXXXXXXX:role/eksctl-*",
-                "arn:aws:iam::XXXXXXXXXXXX:role/ec2-bastion-*"
-            ]
-        }
-    ]
-}
-=========
-                
-# 1. os user 생성 option
-# 2. os login - ec2-user or ...
-# 3. aws cli 설치 (https://docs.aws.amazon.com/ko_kr/cli/latest/userguide/getting-started-install.html)
-# 4. AWS IAM Authenticator for Kubernetes 설치 : https://github.com/kubernetes-sigs/aws-iam-authenticator
-# 5. kubectl 설치 (https://docs.aws.amazon.com/ko_kr/eks/latest/userguide/install-kubectl.html)
-#    5-1. curl -O https://s3.us-west-2.amazonaws.com/amazon-eks/1.34.2/2025-11-13/bin/linux/amd64/kubectl
-#    5-2. curl -O https://s3.us-west-2.amazonaws.com/amazon-eks/1.34.2/2025-11-13/bin/linux/amd64/kubectl.sha256
-#    5-3. sha256sum -c kubectl.sha256
-#    5-4. chmod +x ./kubectl
-#    5-5. mkdir -p $HOME/bin && cp ./kubectl $HOME/bin/kubectl && export PATH=$HOME/bin:$PATH
-#    5-6. echo 'export PATH=$HOME/bin:$PATH' >> ~/.bashrc
-# 6. eksctl 설치 (https://docs.aws.amazon.com/eks/latest/eksctl/installation.html)
-# 7. eks workshop 실습 (https://www.eksworkshop.com/docs/introduction/)
-# 7-1. eksctl 실행 (https://docs.aws.amazon.com/ko_kr/eks/latest/eksctl/tutorial.html)
-     7-1-1. cluster용 policy 생성 
-=========
-cat >eks-cluster-role-trust-policy.json <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Principal": {
-                "Service": "eks.amazonaws.com"
-            },
-            "Action": [
-                "sts:AssumeRole",
-                "sts:TagSession"
-            ]
-        }
-    ]
-}
-EOF
-=========
-            - aws iam create-role --role-name myAmazonEKSClusterRole --assume-role-policy-document file://"eks-cluster-role-trust-policy.json"
+Step1-1. bastion 서버에서 파일 다운로드 혹은 파일 압축 풀기
+   $ git clone https://github.com/kimsangkyeong/aws-eks.git
 
-=========
-     7-1-2. cluter용 role 생성 
-            - aws iam attach-role-policy --policy-arn arn:aws:iam::aws:policy/AmazonEKSClusterPolicy --role-name myAmazonEKSClusterRole
-            - aws iam attach-role-policy --policy-arn arn:aws:iam::aws:policy/AmazonEKSBlockStoragePolicy  --role-name myAmazonEKSClusterRole
-            - aws iam attach-role-policy --policy-arn arn:aws:iam::aws:policy/AmazonEKSComputePolicy --role-name myAmazonEKSClusterRole
-            - aws iam attach-role-policy --policy-arn arn:aws:iam::aws:policy/AmazonEKSLoadBalancingPolicy --role-name myAmazonEKSClusterRole
-            - aws iam attach-role-policy --policy-arn arn:aws:iam::aws:policy/AmazonEKSNetworkingPolicy --role-name myAmazonEKSClusterRole
+Step1-2. 하위 디렉토리의 shell script 모두 실행권한 추가
+   $ find . -type f -name "*.sh" -exec chmod +x {} +
 
-     7-1-3. cluter worker node용 policy 생성 
-            =========
-cat >eks-node-role-trust-policy.json <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Principal": {
-                "Service": "ec2.amazonaws.com"
-            },
-            "Action": "sts:AssumeRole"
-        }
-    ]
-}
-EOF
-=========
-            - aws iam create-role --role-name myAmazonEKSNodeRole --assume-role-policy-document file://"eks-node-role-trust-policy.json"
-     7-1-4. cluter worker node용 role 생성 
-            - aws iam attach-role-policy --policy-arn arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPullOnly --role-name myAmazonEKSNodeRole
-            - aws iam attach-role-policy --policy-arn arn:aws:iam::aws:policy/AmazonEKSWorkerNodeMinimalPolicy --role-name myAmazonEKSNodeRole
+Step1-3. bastion 서버의 role 생성하기 
+   $ ./0.bastion-role-eksadmin.sh
+   # 상기 실행결과 출력 정보를 이용하여  Policy - Role 생성한 후 Bastion 서버에 attach role 처리
 
-     7-1-5. eksctl configure 파일 생성 (https://docs.aws.amazon.com/ko_kr/eks/latest/eksctl/creating-and-managing-clusters.html#using-config-files,
-                                       https://schema.eksctl.io/)
-               * cluster-role, node-role,  user,  iam access entry, access policy AmazonEKSClusterAdminPolicy
-               * ec2 system:node:{{SessionName}} system:nodes AmazonEKSAutoNodePolicy
-               * standard arn:aws:iam::xxxxxxxxxxxx:user/xxxxxxxxxxxx    AmazonEKSClusterAdminPolicy
-            - cluster.yaml
-===========
-apiVersion: eksctl.io/v1alpha5
-kind: ClusterConfig
+Step1-4. bastion 서버에 kubectl 등 실행파일 생성하기
+   $ ./1.bastion-util-setup.sh
+   # 1.bastion-utils-homedir  디렉토리 아래에 설치할 프로그램들을 관리함.
+   # 1.bastion-util-setup.sh 파일의 Global Variable로 설치할 OS,ARCH,버전,Keyname 등 변수 설정 관리함
+   # 원하는 버전 및 keyname을 수정하려면, 1.bastion-util-setup.sh 을 수정한 후 실행하기
+     1-1.install-kubectl.sh          # kubectl <입력파라미터> 버전 설치
+     1-2.install-eksctl.sh           # eksctl 최신 버전 설치
+     1-3.install-awscliv2.sh         # aws client version 2 설치
+     1-4.install-helm.sh             # helm 최신 버전 설치
+     1-a.install-jq.sh               # jq <입력파라미터> 버전 설치
+     1-b.install-k9s.sh              # k9s <입력파라미터> 버전 설치
+     1-c.install-session-manager.sh  # session manager 최신 버전 설치
+     1-d.create-keypair.sh           # eks node ssh 접근용 keypair 생성 <입력파라미터 keyname>
 
-metadata:
-  name: eks-tb07297
-  region: ap-northeast-2
-  version: "1.35"
-  tags: {tool: eksctl}
+###############################################################
+## 확인필요.: Step1-3. bastion 서버의 role 생성하기 필수 (./1.bastion-util-setup.sh 수행)
+##          => 이하작업은 bastion 서버의 role 권한을 이용하여 수행됨
+##------------------------------------------------------------
+## ## Step2. EKS Cluster Control Plane 생성하기 
+###############################################################
 
-kubernetesNetworkConfig:
-  ipFamily: IPv4
-  serviceIPv4CIDR: "10.128.0.0/16"
+Step2-1. eksctl cluster 생성용 config파일 수정하기
+    $ vi 
+   2.
 
-vpc:
-  id: "vpc-03841f019c1ecc756"
-  subnets:
-    public:
-      ap-northeast-2a: { id: subnet-0ba67de4e64599e8d }
-      ap-northeast-2b: { id: subnet-0f88fa66e41a53600 }
-    private:
-      ap-northeast-2a: { id: subnet-03cea3f8ba88173ea }
-      ap-northeast-2b: { id: subnet-0a99c143eca28ec73 }
-  clusterEndpoints:
-    privateAccess: true
-    publicAccess: false
-  publicAccessCIDRs: [ 218.237.76.216/32 ]
-  controlPlaneSecurityGroupIDs: ["sg-0871b732e2357246e"]
-  
-iam:
-  serviceRoleARN: "arn:aws:iam::xxxxxxxxxxxx:role/tb07297-eks-cluster-role"
-  withOIDC: true
 
-managedNodeGroups:
-  - name: management
-    labels: { role: management }
-    instanceType: t3.medium
-    desiredCapacity: 1
-    minSize: 1
-    maxSize: 3
-    subnets: [ subnet-03cea3f8ba88173ea, subnet-0a99c143eca28ec73 ]
-    volumeSize: 80
-    privateNetworking: true
-    tags: {finops-start: skip, finops-stop: skip}
-    iam:
-      instanceRoleARN: "arn:aws:iam::xxxxxxxxxxxx:role/tb07297-eks-nodegroup-role"
-    securityGroups:
-      attachIDs: [ sg-0871b732e2357246e ]
-    volumeType: gp3
-  - name: worker
-    labels: { role: workers }
-    instanceType: t3.medium
-    desiredCapacity: 1
-    minSize: 1
-    maxSize: 3
-    subnets: [ subnet-03cea3f8ba88173ea, subnet-0a99c143eca28ec73 ]
-    volumeSize: 80
-    privateNetworking: true
-    tags: {finops-start: skip, finops-stop: skip}
-    iam:
-      instanceRoleARN: "arn:aws:iam::xxxxxxxxxxxx:role/tb07297-eks-nodegroup-role"
-    securityGroups:
-      attachIDs: [ sg-0871b732e2357246e ]
-    volumeType: gp3
-
-# Managed Addons 설정
-addons:
-  - name: vpc-cni        # 기본 필수 애드온
-  - name: kube-proxy     # 기본 필수 애드온
-  - name: coredns        # 기본 필수 애드온
-  - name: metrics-server # [추가] Metrics Server 활성화
-    version: latest      # 특정 버전을 지정하거나 최신 버전 사용
 
 ===================
      7-1-6. eksctl configure 파일 점검

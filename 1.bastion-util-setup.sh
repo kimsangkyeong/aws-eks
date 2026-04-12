@@ -110,7 +110,7 @@ jobProcess()
 jobProcess "start"  # monitoring - start
 
 # Bastion 서버 설치용 shell script Home directory 정보 설정
-SCRIPT_HOME_PATH="./1.bastion-utils-homedir"
+SCRIPT_HOME_PATH="${PWD}/1.bastion-utils-homedir"
 
 # jq는하위 도구 설치에 사용되므로 First로 설치되어야 함. 
 # a. jq 도구 설치 및 환경설정 

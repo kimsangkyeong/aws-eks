@@ -32,7 +32,7 @@ TEMPLATE_FILE="eksctl_cluster_conf.yaml"  # template 파일  - 필수 항목
 OUTPUT_FILE="${PROJECT_NAME}-${ENVIRONMENT}-${TEMPLATE_FILE}"  # 변수 치환된 파일
 
 # EKS Cluster Control Plane 서버 설치용 shell script Home directory 정보 설정
-SCRIPT_HOME_PATH="./2.eksctl-controlplane-homedir"
+SCRIPT_HOME_PATH="${PWD}/2.eksctl-controlplane-homedir"
 
 # eks cluster control plane, nodegroup 및 addon role 생성하기
 ${SCRIPT_HOME_PATH}/2-1.ekscluster-addon-role.sh  $PROJECT_NAME  $ENVIRONMENT
@@ -42,14 +42,14 @@ ${SCRIPT_HOME_PATH}/2-2.render_eksctl_cluster_config.sh  $PROJECT_NAME  $ENVIRON
 
 if [ $# -ge 1 ]; then
     if [ $1 == "dry" ]; then
-        echo "eksctl create cluster -f ${OUTPUT_FILE} --dry-run"
-        eksctl create cluster -f ${OUTPUT_FILE}  --dry-run
+        echo "eksctl create cluster -f  ${SCRIPT_HOME_PATH}/${OUTPUT_FILE} --dry-run"
+        eksctl create cluster -f  ${SCRIPT_HOME_PATH}/${OUTPUT_FILE}  --dry-run
     elif [ $1 == "up" ]; then
-        echo "eksctl upgrade cluster -f ${OUTPUT_FILE} --approve"
-        eksctl upgrade cluster -f ${OUTPUT_FILE} --approve
+        echo "eksctl upgrade cluster -f  ${SCRIPT_HOME_PATH}/${OUTPUT_FILE} --approve"
+        eksctl upgrade cluster -f  ${SCRIPT_HOME_PATH}/${OUTPUT_FILE} --approve
     fi
 else
-    eksctl create cluster -f ${OUTPUT_FILE}
+    eksctl create cluster -f  ${SCRIPT_HOME_PATH}/${OUTPUT_FILE}
 
     #eksctl get cluster -r ap-northeast-2
 
