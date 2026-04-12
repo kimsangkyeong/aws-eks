@@ -25,6 +25,7 @@ PROJECT_NAME=""                      # Project Name  정보 - 필수 항목
 ENVIRONMENT=""                       # Environment 정보 - 필수 항목 
 REGION_CODE=""                       # Region code
 AWS_ACCOUNT_ID=""                    # AWS Account ID
+ROLE_NAME=""                         # AWS Loadbalaner Controller Role Name
 # =========<<<< Important Global Variable Registration Area Marking Comment (end) >>>>=================
 
 # =========<<<< Function Registration Area Marking Comment (start) >>>>================================
@@ -90,7 +91,7 @@ create-iam-role-for-albc()
     echo "--- AWS Loadbalancer role 생성 시작 ---"
 
     # 1. 설정
-    ROLE_NAME="role-${PROJECT_NAME}-${ENVIRONMENT}-AWSLoadBalancerControllerIAMPolicy"
+    ROLE_NAME="role-${PROJECT_NAME}-${ENVIRONMENT}-eks-AWSLoadBalancerControllerIAMPolicy"
 
     # 2. Trust Relationship (Heredoc)
     TRUST_POLICY_DOC=$(cat <<EOF
@@ -112,11 +113,11 @@ create-iam-role-for-albc()
 EOF
 )
     # 3. 사용자 대신 AWS API를 직접 호출할 수 있는 AWS 로드 밸런서 컨트롤러의 최신 IAM 정책을 다운로드합니다.
-     curl -Lo iam—policy.json https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/main/docs/install/iam_policy.json
+     curl -Lo iam_policy.json https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/main/docs/install/iam_policy.json
 
     # 4. Inline Policy (Heredoc) - custom policy
     INLINE_POLICY_NAME="AWSLoadBalancerControllerIAMPolicy"
-    INLINE_POLICY_DOC=$(cat ./iam_policy.json） # Download한 aws-load-balancer-controller/main/docs/install/iam_policy.json
+    INLINE_POLICY_DOC=$(cat ./iam_policy.json) # Download한 aws-load-balancer-controller/main/docs/install/iam_policy.json
 
     # 5. Managed Policy 리스트
     MANAGED_POLICIES=(
@@ -132,22 +133,6 @@ EOF
 
     # 7. create role
     createRole
-
-#    # 8. 클러스터에 IAM SA 생성 - aws-load-balancer-controller
-#    eksctl create iamserviceaccount \
-#    --cluster="eks-cluster-${PROJECT_NAME}-${ENVIRONMENT}" \
-#    --namespace=kube-system \
-#    --name=aws-load-balancer-controller \
-#    --override-existing-serviceaccounts \
-#    --region ${REGION_CODE} \
-#    --approve
-#
-#    # 9. Pod Identity Association 등록하기 - aws-load-balancer-controller / role
-#    aws eks create-pod-identity-association \
-#        --cluster-name "eks-cluster-${PROJECT_NAME}-${ENVIRONMENT}" \
-#        --namespace kube-system \
-#        --service-account aws-load-balancer-controller \
-#        --role-arn arn:aws:iam::${AWS_ACCOUNT_ID}:role/role-${PROJECT_NAME}-${ENVIRONMENT}-AWSLoadBalancerControllerIAMPolicy
 
 }
 
@@ -181,12 +166,13 @@ helm-install-aws-loadbalancer()
         --cluster-name "eks-cluster-${PROJECT_NAME}-${ENVIRONMENT}" \
         --namespace kube-system \
         --service-account aws-load-balancer-controller \
-        --role-arn arn:aws:iam::${AWS_ACCOUNT_ID}:role/role-${PROJECT_NAME}-${ENVIRONMENT}-AWSLoadBalancerControllerIAMPolicy
+        --role-arn arn:aws:iam::${AWS_ACCOUNT_ID}:role/${ROLE_NAME}
 
     # 5. 배포된 차트는 보안 업데이트를 자동으로 수신하지 않음. 새 차트가 사용가능할 때 수용으로 업그레이드해야 한다.
     #    업그레이드를 위해 helm upgrade를 사용하는 경우 CRD를 수동으로 설치해야 한다. 
-    wget https://raw.githubusercontent.com/aws/eks-charts/master/stable/aws-load-balancer-controller/crds/crds.yaml
+    wget -L https://raw.githubusercontent.com/aws/eks-charts/master/stable/aws-load-balancer-controller/crds/crds.yaml
     kubectl apply -f crds.yaml
+    mv crds.yaml  crds.yaml.$(date +%Y%m%d)
 
     # 6. 컨트롤러가 설치되어 있는지? 확인
     kubectl get deployment -n kube-system aws-load-balancer-controller
@@ -202,7 +188,6 @@ usage() {
     echo "Example: $0 eks-example dev ap-northeast-2  XXXXXXXXXXXX"
     exit 1
 }
-4-1.helm-install-aws-loadbalancer.sh $PROJECT_NAME $ENVIRONMENT $REGION_CODE $AWS_ACCOUNT_ID
 
 # 1. 인자 개수 체크 ($# 는 인자의 개수를 의미)
 if [ "$#" -ne 4 ]; then
