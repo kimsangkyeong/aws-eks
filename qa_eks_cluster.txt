@@ -9,6 +9,10 @@ $ ./5.qa-utils.sh          # qa 프로그램들 전체 자동 실행 (*)
 #    5-1.qa-storage.yaml        # ebs csi driver 점검 yaml 파일
 #----------------------------------------------------------------------------------------#
 
+## bastion 서버에서  EKS Worker node ssh 접속 점검하기 ##
+#  $ ssh -i $HOME/bin/key-mgmt-eks-node.pem ec2-user@<Worker-Node-Private-IP> 
+#######################################
+
 ###  aws-loadbalancer-controller 점검하기 ###
 # ingress로 ALB를 생성하려는 경우 다음의 절차로 수동 배포 삭제 점검하기
 # I. 2048 프로그램으로 점검
@@ -22,3 +26,4 @@ $ ./5.qa-utils.sh          # qa 프로그램들 전체 자동 실행 (*)
 # I-4. 완료 후 프로그램 삭제하기
 #     $ kubectl delete -f https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/main/docs/examples/2048/2048_full.yaml
 #######################################
+
