@@ -113,7 +113,7 @@ create-iam-role-for-albc()
 EOF
 )
     # 3. 사용자 대신 AWS API를 직접 호출할 수 있는 AWS 로드 밸런서 컨트롤러의 최신 IAM 정책을 다운로드합니다.
-     curl -Lo iam_policy.json https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/main/docs/install/iam_policy.json
+    curl -Lo iam_policy.json https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/main/docs/install/iam_policy.json
 
     # 4. Inline Policy (Heredoc) - custom policy
     INLINE_POLICY_NAME="AWSLoadBalancerControllerIAMPolicy"
@@ -134,6 +134,8 @@ EOF
     # 7. create role
     createRole
 
+    # 8. cleanup file
+    rm ./iam_policy.json
 }
 
 #############################################################################

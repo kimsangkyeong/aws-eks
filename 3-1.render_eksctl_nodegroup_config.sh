@@ -358,8 +358,7 @@ getNgMgmtSgIDS()
         aws ec2 create-tags --resources "$NGMGMTSG_ID1" --tags "${SG_TAGS[@]}"
     fi
     # --------- <  인프라 관리용 ssh 접근 환경  > ---------------
-    NGMGMTSG_TAG_NAME2="sgrp-${PROJECT_NAME}-${ENVIRONMENT}-eks-cluster-${PROJECT_NAME}-${ENVIRONMENT}-ng-mgmt-for-infra"
-
+    NGMGMTSG_TAG_NAME2="sgrp-${PROJECT_NAME}-${ENVIRONMENT}-eks-cluster-${PROJECT_NAME}-${ENVIRONMENT}-sharednode"
     NGMGMTSG_ID2=$(aws ec2 describe-security-groups \
                --filters "Name=tag:Name,Values=${NGMGMTSG_TAG_NAME2}" \
                --query "SecurityGroups[0].GroupId" \
@@ -367,34 +366,8 @@ getNgMgmtSgIDS()
 
     # 조회 결과가 없을 경우 예외 처리
     if [ "$NGMGMTSG_ID2" == "None" ] || [ -z "$NGMGMTSG_ID2" ]; then
-        echo "${NGMGMTSG_TAG_NAME2} SecurityGroup 을 생성합니다."
-        NGMGMTSG_ID2=$(aws ec2 create-security-group \
-                        --group-name "$NGMGMTSG_TAG_NAME2" \
-                        --description "EKS Cluster Management Node Security Group for Infra" \
-                        --vpc-id "$VPC_ID" --query "GroupId" --output text)
-        if [ "$NGMGMTSG_ID2" == "None" ] || [ -z "$NGMGMTSG_ID2" ]; then
-            echo "${NGMGMTSG_TAG_NAME2} SecurityGroup 생성중 오류가 발생했습니다."
-            exit 1
-        fi
-        # sg 생성시 만들어 지는 default egress outbound rule 삭제
-        aws ec2 revoke-security-group-egress --group-id "$NGMGMTSG_ID2" --protocol all --port all --cidr 0.0.0.0/0 > /dev/null
-        # vpc 내의 cidr 범위내에서ssh access ingress rule 추가
-        aws ec2 authorize-security-group-ingress \
-         --group-id "$NGMGMTSG_ID2" \
-         --protocol tcp \
-         --port 22 \
-         --cidr $(aws ec2 describe-vpcs \
-                   --vpc-ids "$VPC_ID" \
-                   --query "Vpcs[0].CidrBlock" \
-                   --output text)
-
-        # Tags 추가
-        SG_TAGS=(
-            "Key=project,Value=$PROJECT_NAME"
-            "Key=environment,Value=$ENVIRONMENT"
-            "Key=Name,Value=$NGMGMTSG_TAG_NAME2"
-        )
-        aws ec2 create-tags --resources "$NGMGMTSG_ID2" --tags "${SG_TAGS[@]}"
+        echo "${NGWORKSG_TAG_NAME2} SecurityGroup 이 존재하지 않습니다. - EKS Control Plane & Data Plane SharedNode Security Group Check"
+        exit 1
     fi
 
 IFS= read -r -d '' NGSG_BLOCK <<EOF
@@ -447,8 +420,7 @@ getNgWorkSgIDS()
     fi
 
     # --------- <  인프라 관리용 ssh 접근 환경  > ---------------
-    NGWORKSG_TAG_NAME2="sgrp-${PROJECT_NAME}-${ENVIRONMENT}-eks-cluster-${PROJECT_NAME}-${ENVIRONMENT}-ng-worker-for-infra"
-
+    NGWORKSG_TAG_NAME2="sgrp-${PROJECT_NAME}-${ENVIRONMENT}-eks-cluster-${PROJECT_NAME}-${ENVIRONMENT}-sharednode"
     NGWORKSG_ID2=$(aws ec2 describe-security-groups \
                --filters "Name=tag:Name,Values=${NGWORKSG_TAG_NAME2}" \
                --query "SecurityGroups[0].GroupId" \
@@ -456,34 +428,8 @@ getNgWorkSgIDS()
 
     # 조회 결과가 없을 경우 예외 처리
     if [ "$NGWORKSG_ID2" == "None" ] || [ -z "$NGWORKSG_ID2" ]; then
-        echo "${NGWORKSG_TAG_NAME2} SecurityGroup 을 생성합니다."
-        NGWORKSG_ID2=$(aws ec2 create-security-group \
-                        --group-name "$NGWORKSG_TAG_NAME2" \
-                        --description "EKS Cluster Management Node Security Group for Infra" \
-                        --vpc-id "$VPC_ID" --query "GroupId" --output text)
-        if [ "$NGWORKSG_ID2" == "None" ] || [ -z "$NGWORKSG_ID2" ]; then
-            echo "${NGWORKSG_TAG_NAME2} SecurityGroup 생성중 오류가 발생했습니다."
-            exit 1
-        fi
-        # sg 생성시 만들어 지는 default egress outbound rule 삭제
-        aws ec2 revoke-security-group-egress --group-id "$NGWORKSG_ID2" --protocol all --port all --cidr 0.0.0.0/0 > /dev/null
-        # vpc 내의 cidr 범위내에서ssh access ingress rule 추가
-        aws ec2 authorize-security-group-ingress \
-         --group-id "$NGWORKSG_ID2" \
-         --protocol tcp \
-         --port 22 \
-         --cidr $(aws ec2 describe-vpcs \
-                   --vpc-ids "$VPC_ID" \
-                   --query "Vpcs[0].CidrBlock" \
-                   --output text)
-
-        # Tags 추가
-        SG_TAGS=(
-            "Key=project,Value=$PROJECT_NAME"
-            "Key=environment,Value=$ENVIRONMENT"
-            "Key=Name,Value=$NGWORKSG_TAG_NAME2"
-        )
-        aws ec2 create-tags --resources "$NGWORKSG_ID2" --tags "${SG_TAGS[@]}"
+        echo "${NGWORKSG_TAG_NAME2} SecurityGroup 이 존재하지 않습니다. - EKS Control Plane & Data Plane SharedNode Security Group Check"
+        exit 1
     fi
 
 IFS= read -r -d '' NGSG_BLOCK <<EOF

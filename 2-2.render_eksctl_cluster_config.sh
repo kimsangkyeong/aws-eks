@@ -374,11 +374,13 @@ applyRulesforEKSClusterS()
 
     EGRESS_RULES_TO_EFS=()
     INGRESS_RULES_FOR_APISERVER=()
+    INGRESS_RULES_FOR_SSH_ACCESS=()
     for cidr in "${VPC_CIDR_LIST[@]}"; do
         # 2. EFS Outbound 규칙 배열 생성
         EGRESS_RULES_TO_EFS+=("tcp,2049,2049,$cidr,Allow node to VPC CIDR $cidr for access EFS")
         # 3. APISERVER Inbound 규칙 배열 생성
         INGRESS_RULES_FOR_APISERVER+=("tcp,443,443,$cidr,Allow node to VPC CIDR $cidr for access EKS APIServer")
+        INGRESS_RULES_FOR_SSH_ACCESS+=("tcp,22,22,$cidr,Allow node to VPC CIDR $cidr for SSH access EKS Workernode ")
     done
 
     # rule variables format:  protocol, from_port, to_port, securit group id or cidr, description
@@ -387,10 +389,12 @@ applyRulesforEKSClusterS()
     CSHARESG_INGRESS_RULES=(
         "all,all,all,${CSHARESG_ID},Allow managed and unmanaged nodes to communicate with each other (all ports)"     # Cluster Controlplane self 호출inbound 통신 허용
         "tcp,443,443,${CPSG_ID1},Allow External SG to EKS Cluster API Server"    # Cluster Dataplane 호출inbound >통신 허용
+        "${INGRESS_RULES_FOR_SSH_ACCESS[@]}"
     )
     # Cluster Shared Node Security Group Egress Rules
     CSHARSG_EGRESS_RULES=(
         "all,all,all,${CSHARESG_ID},Allow nodes to communicate with each other (all ports)"    # Cluster Dataplane 호출outbound 통신 허용
+        "tcp,443,443,0.0.0.0/0,Allow nodes to https communicate with internet (https ports)"   # any ip, 443 port 호출outbound 통신 허용
         "${EGRESS_RULES_TO_EFS[@]}"
     )
 
