@@ -1,0 +1,24 @@
+#----------------------------------------------------------------------------------------#
+#----------------------------------------------------------------------------------------#
+< EKS Cluster의 Pod Identity Associtation 방식으로 Addon 추가된 것의 환경 점검하기 >
+#----------------------------------------------------------------------------------------#
+$ ./5.qa-utils.sh          # qa 프로그램들 전체 자동 실행 (*)
+# ./5.qa-homedir  디렉토리 아래에 설치할 프로그램들을 관리함.
+# 필요한 qa 점검 프로그램 관리
+#    5-1.qa-storage.sh          # ebs csi driver 동작 점검
+#    5-1.qa-storage.yaml        # ebs csi driver 점검 yaml 파일
+#----------------------------------------------------------------------------------------#
+
+###  aws-loadbalancer-controller 점검하기 ###
+# ingress로 ALB를 생성하려는 경우 다음의 절차로 수동 배포 삭제 점검하기
+# I. 2048 프로그램으로 점검
+# I-1. 프로그램 배포
+#     $ kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/main/docs/examples/2048/2048_full.yaml
+# I-2. ALB 생성 정보 확인
+#     $ kubectl get ingress -A 
+#     # 정상 결과 :  namespace: game-2048, name: ingress-2048, alb, k8s-game2048-xxxx Address 확인
+# I-3. Web Browser에서 I-2.의 URL로 80 port로 정상 조회 확인 
+#     # 주의 사항:  ALB의 SG는 any ip, 80 port Inbound 허용되어 있으므로, my-ip로 제한먼저 하기.
+# I-4. 완료 후 프로그램 삭제하기
+#     $ kubectl delete -f https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/main/docs/examples/2048/2048_full.yaml
+#######################################
