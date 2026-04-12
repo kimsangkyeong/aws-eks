@@ -10,6 +10,8 @@
 ###    1.0     2026.03.30      ksk         First Version.
 ###    1.1     2026.04.08      ksk         create eks addon roles
 ###    1.2     2026.04.10      ksk         create eks control plane & nodegroup roles
+###    1.3     2026.04.12      ksk         modify nodegroup roles - AmazonEC2FullAccess 추가
+###                                                     ingress로 ALB 생성권한 필요.
 #######################################################################################################
 # =========<<<< Signal command processing login (start) >>>>===========================================
 trap 'echo "$(date +${logdatefmt}) $0 signal(SIGINT) captured" | tee -a ${logfnm}; exit 1;' SIGINT
@@ -241,6 +243,7 @@ EOF
         "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
         "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
         "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
+        "arn:aws:iam::aws:policy/AmazonEC2FullAccess"        
     )
 
     # 5. Role Tags
