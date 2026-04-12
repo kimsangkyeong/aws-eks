@@ -109,7 +109,8 @@ jobProcess()
 # =========<<<< Main Logic Coding Area Marking Comment (start) >>>>====================================
 jobProcess "start"  # monitoring - start
 
-# a. jq 도구 설치 및 환경설정
+# jq는하위 도구 설치에 사용되므로 First로 설치되어야 함. 
+# a. jq 도구 설치 및 환경설정 
 echo -e "\n-------------------------\n"
 echo "# a. jq 도구 설치 및 환경설정"
 echo "1-a.install-jq.sh $JQ_PARAM_OS $JQ_PARAM_VER $JQ_PARAM_ARCH"
@@ -156,6 +157,13 @@ echo -e "\n-------------------------\n"
 echo "# d. bastion 서버에서 eks worker node ssh 접속을 위한 keypair 생성 작업"
 echo "1-d.create-keypair.sh $CREATEKEYPAIR_PARAM_KEYNAME"
 ./1-d.create-keypair.sh $CREATEKEYPAIR_PARAM_KEYNAME
+jobProcess "checking"   # monitoring - checking
+
+# 4. helm 도구 설치 및 환경설정
+printf "\n-------------------------\n"
+echo "# 4. helm 도구 설치 및 환경설정"
+echo "1-4.install-helm.sh"
+./1-4.install-helm.sh
 
 jobProcess "end"   # monitoring - end
 # =========<<<< Main Logic Coding Area Marking Comment (end) >>>>======================================

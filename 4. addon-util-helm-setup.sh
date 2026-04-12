@@ -25,14 +25,9 @@ END_TIME=0      # job 종료 시간
 ELAPSED_TIME=0  # job 수행 시간
 
 # Common parameters
-
-PROJECT_NAME="tb07297"                      # Project Name  정보 - 필수 항목
-ENVIRONMENT="dev"                           # Environment 정보 - 필수 항목 
-CLUSTER_NAME=""
-AWS_ACCOUNT_ID=""
-REGION_CODE="ap-northeast-2"
-
-
+PROJECT_NAME=""                      # Project Name  정보 - 필수 항목
+ENVIRONMENT=""                       # Environment 정보 - 필수 항목 
+ACCOUNT_ID=""                        # Account ID
 # =========<<<< Important Global Variable Registration Area Marking Comment (end) >>>>=================
 
 # =========<<<< Function Registration Area Marking Comment (start) >>>>================================
@@ -108,12 +103,13 @@ jobProcess "start"  # monitoring - start
 # 1. aws-loadbalancer-controller 도구 설치 및 환경설정
 PROJECT_NAME="tb07297"                      # Project Name  정보
 ENVIRONMENT="dev"                           # Environment 정보
-CLUSTER_NAME="eks-cluster-${PROJECT_NAME}-${ENVIRONMENT}"  # Cluster Name
 getAccountID                                # Account ID 정보 - 필수 항목
+REGION_CODE="ap-northeast-2"                # Region Code
+
 echo -e "\n-------------------------\n"
 echo "# 1. aws-loadbalancer-controller 도구 설치 및 환경설정"
-echo "4-1.helm-install-aws-loadbalancer.sh $PROJECT_NAME $REGION_CODE $AWS_ACCOUNT_ID"
-./4-1.helm-install-aws-loadbalancer.sh $PROJECT_NAME $REGION_CODE $AWS_ACCOUNT_ID
+echo "4-1.helm-install-aws-loadbalancer.sh $PROJECT_NAME $ENVIRONMENT $REGION_CODE $ACCOUNT_ID"
+./4-1.helm-install-aws-loadbalancer.sh $PROJECT_NAME $ENVIRONMENT $REGION_CODE $ACCOUNT_ID
 #jobProcess "checking"   # monitoring - checking
 
 jobProcess "end"   # monitoring - end
