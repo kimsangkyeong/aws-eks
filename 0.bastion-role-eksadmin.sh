@@ -259,12 +259,12 @@ jobProcess "start"  # monitoring - start
 
 printf "\n-------------------------\n"
 echo "1. Bastion 서버의 Role에 필요한 정책 설정하기"
-echo "   ==> Bastion Server custom policy name example : policy-<project_name>-<environment>-bastion-bastion-eksadmin"
+echo "   ==> Bastion Server custom policy name example : policy-<project_name>-<environment>-bastion-eksadmin"
 getPolicyOfBastionRoleForEKSAdmin
 
 printf "\n-------------------------\n"
 echo "2. Bastion Role Trust Relationship 설정하기"
-echo "   ==> Bastion Server Role name example : role-<project_name>-<environment>--bastion-eksadmin"
+echo "   ==> Bastion Server Role name example : role-<project_name>-<environment>-bastion-eksadmin"
 getBastionRoleForEKSAdmin
 
 jobProcess "end"   # monitoring - end

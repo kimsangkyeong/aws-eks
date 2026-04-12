@@ -109,61 +109,64 @@ jobProcess()
 # =========<<<< Main Logic Coding Area Marking Comment (start) >>>>====================================
 jobProcess "start"  # monitoring - start
 
+# Bastion 서버 설치용 shell script Home directory 정보 설정
+SCRIPT_HOME_PATH="./1.bastion-utils-homedir"
+
 # jq는하위 도구 설치에 사용되므로 First로 설치되어야 함. 
 # a. jq 도구 설치 및 환경설정 
 echo -e "\n-------------------------\n"
 echo "# a. jq 도구 설치 및 환경설정"
 echo "1-a.install-jq.sh $JQ_PARAM_OS $JQ_PARAM_VER $JQ_PARAM_ARCH"
-./1-a.install-jq.sh $JQ_PARAM_OS $JQ_PARAM_VER $JQ_PARAM_ARCH
+${SCRIPT_HOME_PATH}/1-a.install-jq.sh $JQ_PARAM_OS $JQ_PARAM_VER $JQ_PARAM_ARCH
 jobProcess "checking"   # monitoring - checking
 
 # 1. kubectl 도구 설치 및 환경설정
 echo -e "\n-------------------------\n"
 echo "# 1. kubectl 도구 설치 및 환경설정"
 echo "1-1.install-kubectl.sh $KUBECTL_PARAM_OS $KUBECTL_PARAM_VER $KUBECTL_PARAM_ARCH"
-./1-1.install-kubectl.sh $KUBECTL_PARAM_OS $KUBECTL_PARAM_VER $KUBECTL_PARAM_ARCH
+${SCRIPT_HOME_PATH}/1-1.install-kubectl.sh $KUBECTL_PARAM_OS $KUBECTL_PARAM_VER $KUBECTL_PARAM_ARCH
 jobProcess "checking"   # monitoring - checking
 
 # 2. eksctl 도구 설치 및 환경설정
 printf "\n-------------------------\n"
 echo "# 2. eksctl 도구 설치 및 환경설정"
 echo "1-2.install-eksctl.sh $EKSCTL_PARAM_ARCH"
-./1-2.install-eksctl.sh $EKSCTL_PARAM_ARCH
+${SCRIPT_HOME_PATH}/1-2.install-eksctl.sh $EKSCTL_PARAM_ARCH
 jobProcess "checking"   # monitoring - checking
 
 # 3. awscliv2 도구 설치 및 환경설정
 printf "\n-------------------------\n"
 echo "# 2. awscliv2 도구 설치 및 환경설정"
 echo "1-3.install-awscliv2.sh $AWSCLIV2_PARAM_OS $AWSCLIV2_PARAM_ARCH"
-./1-3.install-awscliv2.sh $AWSCLIV2_PARAM_OS $AWSCLIV2_PARAM_ARCH
+${SCRIPT_HOME_PATH}/1-3.install-awscliv2.sh $AWSCLIV2_PARAM_OS $AWSCLIV2_PARAM_ARCH
 jobProcess "checking"   # monitoring - checking
 
 # b. k9s 도구 설치 및 환경설정
 echo -e "\n-------------------------\n"
 echo "# b. k9s 도구 설치 및 환경설정"
 echo "1-b.install-k9s.sh $K9S_PARAM_ARCH"
-./1-b.install-k9s.sh $K9S_PARAM_ARCH
+${SCRIPT_HOME_PATH}/1-b.install-k9s.sh $K9S_PARAM_ARCH
 jobProcess "checking"   # monitoring - checking
 
 # c. aws session manager 도구 설치 및 환경설정
 echo -e "\n-------------------------\n"
 echo "# c. aws session manager 도구 설치 및 환경설정"
 echo "1-c.install-session-manager.sh $SESSIONM_PARAM_OS $SESSIONM_PARAM_ARCH"
-./1-c.install-session-manager.sh
+${SCRIPT_HOME_PATH}/1-c.install-session-manager.sh
 jobProcess "checking"   # monitoring - checking
 
 # d. bastion 서버에서 eks worker node ssh 접속을 위한 keypair 생성 작업
 echo -e "\n-------------------------\n"
 echo "# d. bastion 서버에서 eks worker node ssh 접속을 위한 keypair 생성 작업"
 echo "1-d.create-keypair.sh $CREATEKEYPAIR_PARAM_KEYNAME"
-./1-d.create-keypair.sh $CREATEKEYPAIR_PARAM_KEYNAME
+${SCRIPT_HOME_PATH}/1-d.create-keypair.sh $CREATEKEYPAIR_PARAM_KEYNAME
 jobProcess "checking"   # monitoring - checking
 
 # 4. helm 도구 설치 및 환경설정
 printf "\n-------------------------\n"
 echo "# 4. helm 도구 설치 및 환경설정"
 echo "1-4.install-helm.sh"
-./1-4.install-helm.sh
+${SCRIPT_HOME_PATH}/1-4.install-helm.sh
 
 jobProcess "end"   # monitoring - end
 # =========<<<< Main Logic Coding Area Marking Comment (end) >>>>======================================

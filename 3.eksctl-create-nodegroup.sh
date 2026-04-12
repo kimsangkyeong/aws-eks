@@ -30,8 +30,11 @@ ENVIRONMENT="dev"                           # Environment 정보 - 필수 항목
 TEMPLATE_FILE="eksctl_nodegroup_conf.yaml"  # template 파일 - 필수 항목
 OUTPUT_FILE="${PROJECT_NAME}-${ENVIRONMENT}-${TEMPLATE_FILE}"  # 변수 치환된 파일
 
+# EKS Cluster Data Plane 서버 설치용 shell script Home directory 정보 설정
+SCRIPT_HOME_PATH="./3.eksctl-dataplane-homedir"
+
 # template의 값을 치환하여 eksctl nodegroup config 파일 생성하기
-./3-1.render_eksctl_nodegroup_config.sh  $PROJECT_NAME  $ENVIRONMENT $TEMPLATE_FILE $OUTPUT_FILE
+${SCRIPT_HOME_PATH}/3-1.render_eksctl_nodegroup_config.sh  $PROJECT_NAME  $ENVIRONMENT ${SCRIPT_HOME_PATH}/$TEMPLATE_FILE ${SCRIPT_HOME_PATH}/$OUTPUT_FILE
 
 if [ $# -ge 1 ]; then
     if [ $1 == "dry" ]; then

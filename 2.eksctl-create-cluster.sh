@@ -25,16 +25,20 @@ logdatefmt="%Y%m%d-%H:%M:%S" # date/time format variable for logging info:used i
 # =========<<<< Function Registration Area Marking Comment (end) >>>>==================================
 
 # =========<<<< Main Logic Coding Area Marking Comment (start) >>>>====================================
+# Parameter setting
 PROJECT_NAME="tb07297"                    # Project Name  정보 - 필수 항목
 ENVIRONMENT="dev"                         # Environment 정보 - 필수 항목 
 TEMPLATE_FILE="eksctl_cluster_conf.yaml"  # template 파일  - 필수 항목
 OUTPUT_FILE="${PROJECT_NAME}-${ENVIRONMENT}-${TEMPLATE_FILE}"  # 변수 치환된 파일
 
+# EKS Cluster Control Plane 서버 설치용 shell script Home directory 정보 설정
+SCRIPT_HOME_PATH="./2.eksctl-controlplane-homedir"
+
 # eks cluster control plane, nodegroup 및 addon role 생성하기
-./2-1.ekscluster-addon-role.sh  $PROJECT_NAME  $ENVIRONMENT
+${SCRIPT_HOME_PATH}/2-1.ekscluster-addon-role.sh  $PROJECT_NAME  $ENVIRONMENT
 
 # template의 값을 치환하여 eksctl cluster config 파일 생성하기
-./2-2.render_eksctl_cluster_config.sh  $PROJECT_NAME  $ENVIRONMENT $TEMPLATE_FILE $OUTPUT_FILE
+${SCRIPT_HOME_PATH}/2-2.render_eksctl_cluster_config.sh  $PROJECT_NAME  $ENVIRONMENT ${SCRIPT_HOME_PATH}/$TEMPLATE_FILE ${SCRIPT_HOME_PATH}/$OUTPUT_FILE
 
 if [ $# -ge 1 ]; then
     if [ $1 == "dry" ]; then

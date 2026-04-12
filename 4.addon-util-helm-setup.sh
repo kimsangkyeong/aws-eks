@@ -100,6 +100,9 @@ getAccountID()
 
 jobProcess "start"  # monitoring - start
 
+# Helm utils 설치용 shell script Home directory 정보 설정
+SCRIPT_HOME_PATH="./4.helm-utils-homedir"
+
 # 1. aws-loadbalancer-controller 도구 설치 및 환경설정
 PROJECT_NAME="tb07297"                      # Project Name  정보
 ENVIRONMENT="dev"                           # Environment 정보
@@ -109,7 +112,7 @@ REGION_CODE="ap-northeast-2"                # Region Code
 echo -e "\n-------------------------\n"
 echo "# 1. aws-loadbalancer-controller 도구 설치 및 환경설정"
 echo "4-1.helm-install-aws-loadbalancer.sh $PROJECT_NAME $ENVIRONMENT $REGION_CODE $ACCOUNT_ID"
-./4-1.helm-install-aws-loadbalancer.sh $PROJECT_NAME $ENVIRONMENT $REGION_CODE $ACCOUNT_ID
+${SCRIPT_HOME_PATH}/4-1.helm-install-aws-loadbalancer.sh $PROJECT_NAME $ENVIRONMENT $REGION_CODE $ACCOUNT_ID
 #jobProcess "checking"   # monitoring - checking
 
 jobProcess "end"   # monitoring - end
