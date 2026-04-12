@@ -26,6 +26,7 @@ ENVIRONMENT=""                       # Environment 정보 - 필수 항목
 REGION_CODE=""                       # Region code
 AWS_ACCOUNT_ID=""                    # AWS Account ID
 ROLE_NAME=""                         # AWS Loadbalaner Controller Role Name
+SCRIPT_HOME_PATH=""                  # Script Home Path
 # =========<<<< Important Global Variable Registration Area Marking Comment (end) >>>>=================
 
 # =========<<<< Function Registration Area Marking Comment (start) >>>>================================
@@ -173,11 +174,14 @@ helm-install-aws-loadbalancer()
     # 5. 배포된 차트는 보안 업데이트를 자동으로 수신하지 않음. 새 차트가 사용가능할 때 수용으로 업그레이드해야 한다.
     #    업그레이드를 위해 helm upgrade를 사용하는 경우 CRD를 수동으로 설치해야 한다. 
     wget -L https://raw.githubusercontent.com/aws/eks-charts/master/stable/aws-load-balancer-controller/crds/crds.yaml
-    kubectl apply -f crds.yaml
-    mv crds.yaml  crds.yaml.$(date +%Y%m%d)
+    kubectl apply -f crds.yaml --server-side
+    mv crds.yaml  ${SCRIPT_HOME_PATH}/crds.yaml.$(date +%Y%m%d)
 
     # 6. 컨트롤러가 설치되어 있는지? 확인
+    echo "kubectl get deployment -n kube-system aws-load-balancer-controller"
     kubectl get deployment -n kube-system aws-load-balancer-controller
+    echo "kubectl get crd | grep elbv2.k8s.aws"
+    kubectl get crd | grep elbv2.k8s.aws
 
 }
 
@@ -186,13 +190,13 @@ helm-install-aws-loadbalancer()
 # =========<<<< Main Logic Coding Area Marking Comment (start) >>>>====================================
 # 사용법 안내 함수
 usage() {
-    echo "Usage: $0 <project_name> <environment> <region-code> <aws_account_id>"
-    echo "Example: $0 eks-example dev ap-northeast-2  XXXXXXXXXXXX"
+    echo "Usage: $0 <project_name> <environment> <region-code> <aws_account_id> <script_home_path>"
+    echo "Example: $0 eks-example dev ap-northeast-2  XXXXXXXXXXXX  $PWD"
     exit 1
 }
 
 # 1. 인자 개수 체크 ($# 는 인자의 개수를 의미)
-if [ "$#" -ne 4 ]; then
+if [ "$#" -ne 5 ]; then
     echo "Error: 인자의 개수가 맞지 않습니다."
     usage
 fi
@@ -202,6 +206,7 @@ PROJECT_NAME=$1
 ENVIRONMENT=$2
 REGION_CODE=$3
 AWS_ACCOUNT_ID=$4
+SCRIPT_HOME_PATH=$5
 
 # 2. aws loadbalacer controller용 sa / policy eksctl로 생성하기.
 create-iam-role-for-albc 
