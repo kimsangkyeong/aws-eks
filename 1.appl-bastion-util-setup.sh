@@ -6,9 +6,7 @@
 ###====================================================================================================
 ### version       date        author        reason
 ###----------------------------------------------------------------------------------------------------
-###    1.0     2026.03.28      ksk         First Version.
-###    1.1     2026.04.02      ksk         add install utils
-###    1.2     2026.04.19      ksk         modify keypair name
+###    1.0     2026.04.19      ksk         First Version.
 #######################################################################################################
 # =========<<<< Signal command processing login (start) >>>>===========================================
 trap 'echo "$(date +${logdatefmt}) $0 signal(SIGINT) captured" | tee -a ${logfnm}; exit 1;' SIGINT
@@ -40,24 +38,12 @@ KUBECTL_PARAM_OS=$PARAM_OS
 KUBECTL_PARAM_VER="1.35"
 KUBECTL_PARAM_ARCH=$PARAM_ARCH
 
-# eksctl parameters
-EKSCTL_PARAM_ARCH=$PARAM_ARCH
-
 # awscliv2 parameters
 AWSCLIV2_PARAM_OS=$PARAM_OS
 AWSCLIV2_PARAM_ARCH=$PARAM_ARCH
 
 # k9s parameters
 K9S_PARAM_ARCH=$PARAM_ARCH
-
-# session manager parameters
-SESSIONM_PARAM_OS="AL2023"
-SESSIONM_PARAM_ARCH=$PARAM_ARCH
-
-# aws keypair for eks parameters
-PROJECT_NAME="tb07297"                    # Project Name  정보 - 필수 항목
-ENVIRONMENT="dev"                         # Environment 정보 - 필수 항목
-CREATEKEYPAIR_PARAM_KEYNAME="keypair-${PROJECT_NAME}-${ENVIRONMENT}-ssh-to-eks-node"
 
 # =========<<<< Important Global Variable Registration Area Marking Comment (end) >>>>=================
 
@@ -115,8 +101,8 @@ jobProcess "start"  # monitoring - start
 # Bastion 서버 설치용 shell script Home directory 정보 설정
 SCRIPT_HOME_PATH="${PWD}/1.bastion-utils-homedir"
 
-# jq는하위 도구 설치에 사용되므로 First로 설치되어야 함. 
-# a. jq 도구 설치 및 환경설정 
+# jq는하위 도구 설치에 사용되므로 First로 설치되어야 함.
+# a. jq 도구 설치 및 환경설정
 echo -e "\n-------------------------\n"
 echo "# a. jq 도구 설치 및 환경설정"
 echo "1-a.install-jq.sh $JQ_PARAM_OS $JQ_PARAM_VER $JQ_PARAM_ARCH"
@@ -128,13 +114,6 @@ echo -e "\n-------------------------\n"
 echo "# 1. kubectl 도구 설치 및 환경설정"
 echo "1-1.install-kubectl.sh $KUBECTL_PARAM_OS $KUBECTL_PARAM_VER $KUBECTL_PARAM_ARCH"
 ${SCRIPT_HOME_PATH}/1-1.install-kubectl.sh $KUBECTL_PARAM_OS $KUBECTL_PARAM_VER $KUBECTL_PARAM_ARCH
-jobProcess "checking"   # monitoring - checking
-
-# 2. eksctl 도구 설치 및 환경설정
-printf "\n-------------------------\n"
-echo "# 2. eksctl 도구 설치 및 환경설정"
-echo "1-2.install-eksctl.sh $EKSCTL_PARAM_ARCH"
-${SCRIPT_HOME_PATH}/1-2.install-eksctl.sh $EKSCTL_PARAM_ARCH
 jobProcess "checking"   # monitoring - checking
 
 # 3. awscliv2 도구 설치 및 환경설정
@@ -149,20 +128,6 @@ echo -e "\n-------------------------\n"
 echo "# b. k9s 도구 설치 및 환경설정"
 echo "1-b.install-k9s.sh $K9S_PARAM_ARCH"
 ${SCRIPT_HOME_PATH}/1-b.install-k9s.sh $K9S_PARAM_ARCH
-jobProcess "checking"   # monitoring - checking
-
-# c. aws session manager 도구 설치 및 환경설정
-echo -e "\n-------------------------\n"
-echo "# c. aws session manager 도구 설치 및 환경설정"
-echo "1-c.install-session-manager.sh $SESSIONM_PARAM_OS $SESSIONM_PARAM_ARCH"
-${SCRIPT_HOME_PATH}/1-c.install-session-manager.sh
-jobProcess "checking"   # monitoring - checking
-
-# d. bastion 서버에서 eks worker node ssh 접속을 위한 keypair 생성 작업
-echo -e "\n-------------------------\n"
-echo "# d. bastion 서버에서 eks worker node ssh 접속을 위한 keypair 생성 작업"
-echo "1-d.create-keypair.sh $CREATEKEYPAIR_PARAM_KEYNAME"
-${SCRIPT_HOME_PATH}/1-d.create-keypair.sh $CREATEKEYPAIR_PARAM_KEYNAME
 jobProcess "checking"   # monitoring - checking
 
 # 4. helm 도구 설치 및 환경설정

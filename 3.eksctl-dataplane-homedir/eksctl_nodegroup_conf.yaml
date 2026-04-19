@@ -22,7 +22,7 @@ managedNodeGroups:
     volumeSize: 100           # 파일용량 100 GiB
     ssh:
       allow: true
-      publicKeyName: key-mgmt-eks-node   # AWS에 등록될 key pair 명칭
+      publicKeyName: keypair-<project_name>-<environment>-ssh-to-eks-node   # AWS에 등록될 key pair 명칭
     labels:
 <mgmt_node_labels>
     privateNetworking: true   # Private Subnet으로 배포
@@ -50,7 +50,7 @@ managedNodeGroups:
     volumeSize: 100           # 파일용량 100 GiB
     ssh:
       allow: true
-      publicKeyName: key-mgmt-eks-node   # AWS에 등록될 key pair 명칭
+      publicKeyName: keypair-<project_name>-<environment>-ssh-to-eks-node  # AWS에 등록될 key pair 명칭
     labels:
 <worker_node_labels>
     privateNetworking: true   # Private Subnet으로 배포
