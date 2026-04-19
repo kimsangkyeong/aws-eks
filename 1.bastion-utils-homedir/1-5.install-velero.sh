@@ -110,7 +110,7 @@ install-velero()
     velero -h
 
     # file clean up
-    rm -fr ${TARBALL_NAME}
+    rm -fr ${TARBALL_NAME} $DOWNLOADFILENAME
 }
 # =========<<<< Function Registration Area Marking Comment (end) >>>>==================================
 
