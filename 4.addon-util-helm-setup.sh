@@ -120,6 +120,13 @@ echo -e "\n-------------------------\n"
 echo "# 2. cluster autoscaler 도구 설치 및 환경설정"
 echo "4-2.helm-install-cluster-autoscaler.sh $PROJECT_NAME $ENVIRONMENT $REGION_CODE $ACCOUNT_ID $SCRIPT_HOME_PATH"
 ${SCRIPT_HOME_PATH}/4-2.helm-install-cluster-autoscaler.sh $PROJECT_NAME $ENVIRONMENT $REGION_CODE $ACCOUNT_ID $SCRIPT_HOME_PATH
+jobProcess "checking"   # monitoring - checking
+
+#3. velero 도구 설치 및 환경설정
+echo -e "\n-------------------------\n"
+echo "# 3. velero 도구 설치 및 환경설정"
+echo "4-3.helm-install-velero.sh $PROJECT_NAME $ENVIRONMENT $REGION_CODE $ACCOUNT_ID $SCRIPT_HOME_PATH"
+${SCRIPT_HOME_PATH}/4-3.helm-install-velero.sh $PROJECT_NAME $ENVIRONMENT $REGION_CODE $ACCOUNT_ID $SCRIPT_HOME_PATH
 
 jobProcess "end"   # monitoring - end
 # =========<<<< Main Logic Coding Area Marking Comment (end) >>>>======================================
