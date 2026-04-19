@@ -8,7 +8,7 @@
 ###----------------------------------------------------------------------------------------------------
 ###    1.0     2026.03.28      ksk         First Version.
 ###    1.1     2026.04.02      ksk         add install utils
-###    1.2     2026.04.19      ksk         modify keypair name
+###    1.2     2026.04.19      ksk         modify keypair name and add install velero
 #######################################################################################################
 # =========<<<< Signal command processing login (start) >>>>===========================================
 trap 'echo "$(date +${logdatefmt}) $0 signal(SIGINT) captured" | tee -a ${logfnm}; exit 1;' SIGINT
@@ -58,6 +58,11 @@ SESSIONM_PARAM_ARCH=$PARAM_ARCH
 PROJECT_NAME="tb07297"                    # Project Name  정보 - 필수 항목
 ENVIRONMENT="dev"                         # Environment 정보 - 필수 항목
 CREATEKEYPAIR_PARAM_KEYNAME="keypair-${PROJECT_NAME}-${ENVIRONMENT}-ssh-to-eks-node"
+
+# velero parameters
+VELERO_PARAM_OS=$PARAM_OS
+VELERO_PARAM_VER="1.18.0"
+VELERO_PARAM_ARCH=$PARAM_ARCH
 
 # =========<<<< Important Global Variable Registration Area Marking Comment (end) >>>>=================
 
@@ -170,6 +175,13 @@ printf "\n-------------------------\n"
 echo "# 4. helm 도구 설치 및 환경설정"
 echo "1-4.install-helm.sh"
 ${SCRIPT_HOME_PATH}/1-4.install-helm.sh
+jobProcess "checking"   # monitoring - checking
+
+# 5. velero 도구 설치 및 환경설정
+printf "\n-------------------------\n"
+echo "# 5. velero 도구 설치 및 환경설정"
+echo "1-5.install-velero.sh"
+${SCRIPT_HOME_PATH}/1-5.install-velero.sh $VELERO_PARAM_OS $VELERO_PARAM_VER $VELERO_PARAM_ARCH
 
 jobProcess "end"   # monitoring - end
 # =========<<<< Main Logic Coding Area Marking Comment (end) >>>>======================================
