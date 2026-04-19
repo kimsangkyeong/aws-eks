@@ -113,7 +113,13 @@ echo -e "\n-------------------------\n"
 echo "# 1. aws-loadbalancer-controller 도구 설치 및 환경설정"
 echo "4-1.helm-install-aws-loadbalancer.sh $PROJECT_NAME $ENVIRONMENT $REGION_CODE $ACCOUNT_ID $SCRIPT_HOME_PATH"
 ${SCRIPT_HOME_PATH}/4-1.helm-install-aws-loadbalancer.sh $PROJECT_NAME $ENVIRONMENT $REGION_CODE $ACCOUNT_ID $SCRIPT_HOME_PATH
-#jobProcess "checking"   # monitoring - checking
+jobProcess "checking"   # monitoring - checking
+
+#2. cluster autoscaler 도구 설치 및 환경설정
+echo -e "\n-------------------------\n"
+echo "# 2. cluster autoscaler 도구 설치 및 환경설정"
+echo "4-2.helm-install-cluster-autoscaler.sh $PROJECT_NAME $ENVIRONMENT $REGION_CODE $ACCOUNT_ID $SCRIPT_HOME_PATH"
+${SCRIPT_HOME_PATH}/4-2.helm-install-cluster-autoscaler.sh $PROJECT_NAME $ENVIRONMENT $REGION_CODE $ACCOUNT_ID $SCRIPT_HOME_PATH
 
 jobProcess "end"   # monitoring - end
 # =========<<<< Main Logic Coding Area Marking Comment (end) >>>>======================================
