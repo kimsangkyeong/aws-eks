@@ -37,6 +37,9 @@ managedNodeGroups:
       withShared: false   # eksctl이 자동으로 만드는 노드 SG들을 붙이지 않으려면 false 처리
       withLocal: false    # eksctl이 자동으로 만드는 노드 SG들을 붙이지 않으려면 false 처리
     volumeType: gp3
+    preBootstrapCommands:
+      - "sysctl -w vm.max_map_count=262144"
+      - "echo 'vm.max_map_count=262144' >> /etc/sysctl.conf" # 영구 반영을 위한 설정
     disableIMDSv1: true       # IMDSv2 강제 적용
     taints:
 <mgmt_node_taints>
@@ -65,6 +68,7 @@ managedNodeGroups:
       withShared: false   # eksctl이 자동으로 만드는 노드 SG들을 붙이지 않으려면 false 처리
       withLocal: false    # eksctl이 자동으로 만드는 노드 SG들을 붙이지 않으려면 false 처리
     volumeType: gp3
+    preBootstrapCommands:
     disableIMDSv1: true       # IMDSv2 강제 적용
     taints:
 <worker_node_taints>
