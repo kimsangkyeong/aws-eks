@@ -4,10 +4,14 @@
 ### Description : eksctl의nodegroup config 파일을 template을 이용하여 변수 치환 작업
 ### Information : eksctl schema  정보
 ###               https://schema.eksctl.io/
+###               # CA가 이 노드 그룹을 인식하게 하는 필수 Tag key/values
+###                  k8s.io/cluster-autoscaler/enabled: "true"
+###                  k8s.io/cluster-autoscaler/<cluster명>: "owned"
 ###====================================================================================================
 ### version       date        author        reason
 ###----------------------------------------------------------------------------------------------------
 ###    1.0     2026.04.07      ksk         First Version.
+###    1.1     2026.05.10      ksk         Cluster Autoscaler 추가
 #######################################################################################################
 # =========<<<< Signal command processing login (start) >>>>===========================================
 trap 'echo "$(date +${logdatefmt}) $0 signal(SIGINT) captured" | tee -a ${logfnm}; exit 1;' SIGINT
@@ -288,6 +292,8 @@ getNgWorkTags()
 IFS= read -r -d '' TAGS_BLOCK <<EOF
       role: ${EKS_NG_WORK_NAME}
       Name: "eks-nodegroup-${PROJECT_NAME}-${ENVIRONMENT}-${EKS_NG_WORK_NAME}"
+      k8s.io/cluster-autoscaler/enabled: "true"
+      k8s.io/cluster-autoscaler/eks-cluster-${PROJECT_NAME}-${ENVIRONMENT}: "owned"
 EOF
 
     # 2. sed에서 사용할 수 있도록 줄바꿈 처리 (\n 추가)

@@ -16,7 +16,7 @@ managedNodeGroups:
     instanceType: t3.medium
     subnets:
 <mgmt_node_subnets>
-    desiredCapacity: 2   # autoscaler config  - coredns 는 replica: 2 참고하기. 정상 배포되려면 2개 이상 배포
+    desiredCapacity: 1   # autoscaler config  - coredns 는 replica: 2 참고하기. 정상 배포되려면 2개 이상 배포
     minSize: 1           # autoscaler config
     maxSize: 3           # autoscaler config
     volumeSize: 100           # 파일용량 100 GiB
@@ -38,8 +38,6 @@ managedNodeGroups:
       withLocal: false    # eksctl이 자동으로 만드는 노드 SG들을 붙이지 않으려면 false 처리
     volumeType: gp3
     preBootstrapCommands:
-      - "sysctl -w vm.max_map_count=262144"
-      - "echo 'vm.max_map_count=262144' >> /etc/sysctl.conf" # 영구 반영을 위한 설정
     disableIMDSv1: true       # IMDSv2 강제 적용
     taints:
 <mgmt_node_taints>
@@ -61,6 +59,8 @@ managedNodeGroups:
 <worker_node_tags>
     iam:
       instanceRoleARN: "arn:aws:iam::<account_id>:role/role-<project_name>-<environment>-eks-nodegroup"  # EKS Cluster Node Group Role
+      withAddonPolicies:
+        autoScaler: true # CA가 ASG를 수정할 수 있는 권한 부여
     securityGroups:
       attachIDs:
 <worker_node_sg_ids>
@@ -69,6 +69,8 @@ managedNodeGroups:
       withLocal: false    # eksctl이 자동으로 만드는 노드 SG들을 붙이지 않으려면 false 처리
     volumeType: gp3
     preBootstrapCommands:
+      - "sysctl -w vm.max_map_count=262144"
+      - "echo 'vm.max_map_count=262144' >> /etc/sysctl.conf" # 영구 반영을 위한 설정
     disableIMDSv1: true       # IMDSv2 강제 적용
     taints:
 <worker_node_taints>
