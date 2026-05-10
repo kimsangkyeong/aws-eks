@@ -1,13 +1,18 @@
 #!/bin/bash
 #######################################################################################################
 ### File Name : 2.eksctl-create-cluster.sh
-### Description : Install eks cluster with eksctl 
+### Description : Install eks cluster with eksctl
 ### Information :
+###               1. eksctl upgrade cluster 명령은 inplace type으로 eks version upgrade 시에만 사용함.
+###               2. eks addon 수정 및 추가는 eksctl ClusterConfig 파일수정 후 create addon 수행처리함
+###               단,  addon을 삭제하기 위해서는 eksctl delete addon  명령어로 먼저 삭제후에
+###                    ClusterConfig 파일에서 정보를 삭제하여 정보 동기화 처리를 해야 함.
 ###====================================================================================================
 ### version       date        author        reason
 ###----------------------------------------------------------------------------------------------------
 ###    1.0     2026.03.28      ksk         First Version.
 ###    1.1     2026.04.09      ksk         add create addon role
+###    1.2     2026.05.10      ksk         add update addon
 #######################################################################################################
 # =========<<<< Signal command processing login (start) >>>>===========================================
 trap 'echo "$(date +${logdatefmt}) $0 signal(SIGINT) captured" | tee -a ${logfnm}; exit 1;' SIGINT
@@ -27,7 +32,7 @@ logdatefmt="%Y%m%d-%H:%M:%S" # date/time format variable for logging info:used i
 # =========<<<< Main Logic Coding Area Marking Comment (start) >>>>====================================
 # Parameter setting
 PROJECT_NAME="tb07297"                    # Project Name  정보 - 필수 항목
-ENVIRONMENT="dev"                         # Environment 정보 - 필수 항목 
+ENVIRONMENT="dev"                         # Environment 정보 - 필수 항목
 TEMPLATE_FILE="eksctl_cluster_conf.yaml"  # template 파일  - 필수 항목
 OUTPUT_FILE="${PROJECT_NAME}-${ENVIRONMENT}-${TEMPLATE_FILE}"  # 변수 치환된 파일
 
@@ -47,6 +52,9 @@ if [ $# -ge 1 ]; then
     elif [ $1 == "up" ]; then
         echo "eksctl upgrade cluster -f  ${SCRIPT_HOME_PATH}/${OUTPUT_FILE} --approve"
         eksctl upgrade cluster -f  ${SCRIPT_HOME_PATH}/${OUTPUT_FILE} --approve
+    elif [ $1 == "addon" ]; then
+        echo "eksctl create addon -f  ${SCRIPT_HOME_PATH}/${OUTPUT_FILE} --wait"
+        eksctl create addon -f  ${SCRIPT_HOME_PATH}/${OUTPUT_FILE} --wait
     fi
 else
     eksctl create cluster -f  ${SCRIPT_HOME_PATH}/${OUTPUT_FILE}
